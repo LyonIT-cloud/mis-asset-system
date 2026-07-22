@@ -553,7 +553,7 @@
             isFirebaseConnected = false;
         }
 
-        // 資料歸零（預設空陣列，由使用者自行建立與新增）
+        // 資料預設全部歸零（空白）
         let misInventory = [];
         let codeRules = [
             { id: "R-01", prefix: "FA-xxxx", title: "固定資產", example: "FA-2026-001", desc: "高價值設備如筆電、螢幕、伺服器。" },
@@ -567,7 +567,7 @@
 
         let currentDeptFilter = 'ALL';
         let editingItemId = null;
-        let editingScrapId = null; // 報廢紀錄編輯中 ID
+        let editingScrapId = null;
 
         let invPage = 1, invLimit = 10;
         let deptPage = 1, deptLimit = 10;
@@ -631,13 +631,7 @@
         }
 
         function saveAllState() {
-            if (isFirebaseConnected && db) {
-                misInventory.forEach(item => db.collection('misInventory').doc(item.id).set(item, { merge: true }));
-                codeRules.forEach(rule => db.collection('codeRules').doc(rule.id).set(rule, { merge: true }));
-                deptAssets.forEach(asset => db.collection('deptAssets').doc(asset.id).set(asset, { merge: true }));
-                requests.forEach(req => db.collection('requests').doc(req.reqId).set(req, { merge: true }));
-                scrappedLogs.forEach(scrap => db.collection('scrappedLogs').doc(scrap.scrapId).set(scrap, { merge: true }));
-            } else {
+            if (!isFirebaseConnected) {
                 localStorage.setItem('misInventory', JSON.stringify(misInventory));
                 localStorage.setItem('codeRules', JSON.stringify(codeRules));
                 localStorage.setItem('deptAssets', JSON.stringify(deptAssets));
@@ -743,6 +737,7 @@
                 showToast(`已成功新增對照規則【${prefix}】！`);
             }
 
+            if (isFirebaseConnected && db) db.collection('codeRules').doc(id || newId).set({ id: id || newId, prefix, title, example, desc }, { merge: true });
             saveAllState();
             cancelRuleEdit();
             renderCodeRules();
@@ -910,6 +905,9 @@
                                 <button onclick="scrapFromMIS('${item.id}')" title="毀損註銷報廢" class="bg-slate-100 hover:bg-rose-50 text-rose-600 px-2 py-1 rounded text-xs transition flex items-center gap-1 font-medium">
                                     <i class="fa-solid fa-trash-can"></i> 報廢
                                 </button>
+                                <button onclick="deleteMISItem('${item.id}')" title="直接刪除此品項" class="bg-slate-100 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded text-xs transition flex items-center gap-1 font-medium">
+                                    <i class="fa-solid fa-xmark"></i> 刪除
+                                </button>
                             </div>
                         </td>
                     `;
@@ -975,12 +973,28 @@
                 requests.forEach(r => { if (r.itemName === oldName) { r.itemName = newName; } });
             }
 
+            if (isFirebaseConnected && db) {
+                db.collection('misInventory').doc(newId).set(item);
+            }
             saveAllState();
             editingItemId = null;
             renderMISInventory();
             renderDeptAssets();
             renderRequests();
             showToast(`資產【${newId} - ${newName}】變更已儲存！`);
+        }
+
+        function deleteMISItem(id) {
+            if (confirm("確定要永久刪除此品項嗎？")) {
+                const idx = misInventory.findIndex(i => i.id === id);
+                if (idx > -1) {
+                    const removed = misInventory.splice(idx, 1)[0];
+                    if (isFirebaseConnected && db) db.collection('misInventory').doc(id).delete();
+                    saveAllState();
+                    renderMISInventory();
+                    showToast(`已成功刪除品項【${removed.name}】！`);
+                }
+            }
         }
 
         function adjustMISStock(id, delta) {
@@ -991,6 +1005,7 @@
                     return;
                 }
                 item.qty += delta;
+                if (isFirebaseConnected && db) db.collection('misInventory').doc(id).set(item, { merge: true });
                 saveAllState();
                 renderMISInventory();
                 showToast(`【${item.name}】總倉庫存調整為：${item.qty} ${item.unit}`);
@@ -1011,6 +1026,11 @@
                     date: new Date().toISOString().split('T')[0]
                 };
                 scrappedLogs.push(newScrap);
+
+                if (isFirebaseConnected && db) {
+                    db.collection('misInventory').doc(id).set(item, { merge: true });
+                    db.collection('scrappedLogs').doc(newScrap.scrapId).set(newScrap);
+                }
 
                 saveAllState();
                 renderMISInventory();
@@ -1043,7 +1063,10 @@
                 finalId = `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
             }
 
-            misInventory.unshift({ id: finalId, name, category, spec, qty, minQty, unit: "個", date: today });
+            const newItem = { id: finalId, name, category, spec, qty, minQty, unit: "個", date: today };
+            misInventory.unshift(newItem);
+
+            if (isFirebaseConnected && db) db.collection('misInventory').doc(finalId).set(newItem);
 
             document.getElementById('new-item-id').value = '';
             document.getElementById('new-item-name').value = '';
@@ -1070,6 +1093,11 @@
                     date: new Date().toISOString().split('T')[0]
                 };
                 deptAssets.unshift(newAsset);
+
+                if (isFirebaseConnected && db) {
+                    db.collection('misInventory').doc(id).set(item, { merge: true });
+                    db.collection('deptAssets').doc(newAsset.id).set(newAsset);
+                }
 
                 userInput.value = '';
                 saveAllState();
@@ -1162,6 +1190,7 @@
                 const misItem = misInventory.find(i => i.name === asset.itemName);
                 if (misItem) {
                     misItem.qty += asset.qty;
+                    if (isFirebaseConnected && db) db.collection('misInventory').doc(misItem.id).set(misItem, { merge: true });
                 }
                 if (isFirebaseConnected && db) db.collection('deptAssets').doc(assetId).delete();
                 deptAssets.splice(index, 1);
@@ -1187,7 +1216,11 @@
                 };
                 scrappedLogs.push(newScrap);
 
-                if (isFirebaseConnected && db) db.collection('deptAssets').doc(assetId).delete();
+                if (isFirebaseConnected && db) {
+                    db.collection('deptAssets').doc(assetId).delete();
+                    db.collection('scrappedLogs').doc(newScrap.scrapId).set(newScrap);
+                }
+
                 deptAssets.splice(index, 1);
                 saveAllState();
                 renderDeptAssets();
@@ -1253,6 +1286,8 @@
             };
             requests.push(newReq);
 
+            if (isFirebaseConnected && db) db.collection('requests').doc(newReq.reqId).set(newReq);
+
             document.getElementById('req-user-name').value = '';
             saveAllState();
             renderRequests();
@@ -1274,7 +1309,7 @@
 
             if (misItem && misItem.qty >= req.qty) {
                 misItem.qty -= req.qty;
-                deptAssets.unshift({
+                const newAsset = {
                     id: `DA-${Math.floor(100 + Math.random() * 900)}`,
                     dept: req.dept,
                     user: req.user,
@@ -1282,11 +1317,16 @@
                     qty: req.qty,
                     unit: misItem.unit,
                     date: new Date().toISOString().split('T')[0]
-                });
+                };
+                deptAssets.unshift(newAsset);
 
-                if (isFirebaseConnected && db) db.collection('requests').doc(req.reqId).delete();
+                if (isFirebaseConnected && db) {
+                    db.collection('misInventory').doc(misItem.id).set(misItem, { merge: true });
+                    db.collection('deptAssets').doc(newAsset.id).set(newAsset);
+                    db.collection('requests').doc(req.reqId).delete();
+                }
+
                 requests.splice(idx, 1);
-
                 saveAllState();
                 renderMISInventory();
                 renderDeptAssets();
@@ -1304,7 +1344,6 @@
             showToast(`已退回【${req.user}】的領用申請單！`);
         }
 
-        // 報廢紀錄渲染與編輯
         function renderScrappedLogs() {
             const tbody = document.getElementById('scrapped-tbody');
             const startDate = document.getElementById('scrap-start-date').value;
@@ -1432,6 +1471,7 @@
             log.reason = newReason;
             log.date = newDate;
 
+            if (isFirebaseConnected && db) db.collection('scrappedLogs').doc(newId).set(log);
             saveAllState();
             editingScrapId = null;
             renderScrappedLogs();
@@ -1539,7 +1579,9 @@
                         const date = cols[7] || new Date().toISOString().split('T')[0];
 
                         if (name && !misInventory.some(item => item.id === id)) {
-                            misInventory.unshift({ id, name, category, spec, qty, minQty, unit, date });
+                            const newItem = { id, name, category, spec, qty, minQty, unit, date };
+                            misInventory.unshift(newItem);
+                            if (isFirebaseConnected && db) db.collection('misInventory').doc(id).set(newItem);
                             count++;
                         }
                     }
