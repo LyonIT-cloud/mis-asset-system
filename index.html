@@ -83,7 +83,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen">
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen" onclick="closeAllActionMenus(event)">
 
     <!-- 列印專用報表抬頭 -->
     <div id="print-header" class="print-only p-4 mb-4 border-b border-slate-400">
@@ -317,17 +317,16 @@
                     <table class="w-full text-left border-collapse text-sm">
                         <thead class="sticky-thead">
                             <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-xs">
-                                <th class="p-3">編號</th>
-                                <th class="p-3">品項名稱</th>
-                                <th class="p-3">類別</th>
+                                <th class="p-3 w-28">編號</th>
+                                <th class="p-3 w-44">品項名稱</th>
+                                <th class="p-3 w-24">類別</th>
                                 <th class="p-3">規格 / 備註</th>
-                                <th class="p-3 text-center">總倉庫存</th>
-                                <th class="p-3 text-center">最低安全庫存</th>
-                                <th class="p-3 text-center">庫存狀態</th>
-                                <th class="p-3 text-center">入庫/建檔日期</th>
-                                <th class="p-3 text-center no-print">庫存微調</th>
-                                <th class="p-3 text-center no-print">快速調撥至部門</th>
-                                <th class="p-3 text-center no-print">管理操作</th>
+                                <th class="p-3 text-center w-20">總倉庫存</th>
+                                <th class="p-3 text-center w-20">最低安全庫存</th>
+                                <th class="p-3 text-center w-24">庫存狀態</th>
+                                <th class="p-3 text-center w-24">入庫日期</th>
+                                <th class="p-3 text-center w-20 no-print">庫存微調</th>
+                                <th class="p-3 text-center w-24 no-print">快速操作</th>
                             </tr>
                         </thead>
                         <tbody id="mis-inventory-tbody" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
@@ -553,7 +552,6 @@
             isFirebaseConnected = false;
         }
 
-        // 資料預設全部歸零（空白）
         let misInventory = [];
         let codeRules = [
             { id: "R-01", prefix: "FA-xxxx", title: "固定資產", example: "FA-2026-001", desc: "高價值設備如筆電、螢幕、伺服器。" },
@@ -772,6 +770,21 @@
             if (tab === 'scrapped') renderScrappedLogs();
         }
 
+        // 展開/收合操作選單
+        function toggleActionMenu(event, id) {
+            event.stopPropagation();
+            // 先關閉其他所有打開的選單
+            document.querySelectorAll('.action-menu-dropdown').forEach(menu => {
+                if (menu.id !== `action-menu-${id}`) menu.classList.add('hidden');
+            });
+            const menu = document.getElementById(`action-menu-${id}`);
+            if (menu) menu.classList.toggle('hidden');
+        }
+
+        function closeAllActionMenus(event) {
+            document.querySelectorAll('.action-menu-dropdown').forEach(menu => menu.classList.add('hidden'));
+        }
+
         function renderMISInventory() {
             const tbody = document.getElementById('mis-inventory-tbody');
             const search = document.getElementById('inventorySearch').value.toLowerCase().trim();
@@ -847,15 +860,10 @@
                         </td>
                         <td class="p-3 text-center text-slate-400 text-xs align-middle">${item.date || '-'}</td>
                         <td class="p-3 text-center text-slate-400 text-xs align-middle no-print">鎖定</td>
-                        <td class="p-3 text-center text-slate-400 text-xs align-middle no-print">鎖定</td>
                         <td class="p-3 text-center align-middle no-print">
                             <div class="inline-flex items-center gap-1">
-                                <button onclick="saveEditItem('${item.id}')" title="儲存變更" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs font-medium shadow-sm transition flex items-center gap-1">
-                                    <i class="fa-solid fa-check"></i> 儲存
-                                </button>
-                                <button onclick="cancelEditItem()" title="取消修改" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs font-medium transition">
-                                    取消
-                                </button>
+                                <button onclick="saveEditItem('${item.id}')" title="儲存變更" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs font-medium shadow-sm transition">儲存</button>
+                                <button onclick="cancelEditItem()" title="取消修改" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs font-medium transition">取消</button>
                             </div>
                         </td>
                     `;
@@ -886,28 +894,40 @@
                                 </button>
                             </div>
                         </td>
-                        <td class="p-3 text-center align-middle no-print">
-                            <div class="inline-flex items-center gap-1.5">
-                                <select id="dispatch-dept-select-${item.id}" class="border border-slate-300 rounded px-1.5 py-1 text-xs focus:outline-none focus:border-indigo-500">
-                                    ${deptOptions}
-                                </select>
-                                <input type="text" id="dispatch-user-input-${item.id}" placeholder="同仁" class="w-16 border border-slate-300 rounded px-1.5 py-1 text-xs focus:outline-none focus:border-indigo-500">
-                                <button onclick="dispatchToDept('${item.id}')" title="調撥給同仁" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded text-xs transition whitespace-nowrap">
-                                    調撥 1 ${item.unit}
-                                </button>
-                            </div>
-                        </td>
-                        <td class="p-3 text-center align-middle no-print">
-                            <div class="inline-flex items-center gap-1">
-                                <button onclick="startEditItem('${item.id}')" title="修改品項資料" class="bg-slate-100 hover:bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-xs transition flex items-center gap-1 font-medium">
-                                    <i class="fa-solid fa-pen-to-square"></i> 編輯
-                                </button>
-                                <button onclick="scrapFromMIS('${item.id}')" title="毀損註銷報廢" class="bg-slate-100 hover:bg-rose-50 text-rose-600 px-2 py-1 rounded text-xs transition flex items-center gap-1 font-medium">
-                                    <i class="fa-solid fa-trash-can"></i> 報廢
-                                </button>
-                                <button onclick="deleteMISItem('${item.id}')" title="直接刪除此品項" class="bg-slate-100 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded text-xs transition flex items-center gap-1 font-medium">
-                                    <i class="fa-solid fa-xmark"></i> 刪除
-                                </button>
+                        <td class="p-3 text-center align-middle no-print relative">
+                            <!-- 收合式操作按鈕 -->
+                            <button onclick="toggleActionMenu(event, '${item.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5 mx-auto">
+                                <i class="fa-solid fa-bars"></i> 操作
+                            </button>
+                            
+                            <!-- 點擊後彈出的選單卡片 -->
+                            <div id="action-menu-${item.id}" class="action-menu-dropdown hidden absolute right-2 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-50 p-3 text-left space-y-3">
+                                <div>
+                                    <p class="text-[11px] font-bold text-slate-400 uppercase mb-1.5 flex items-center gap-1">
+                                        <i class="fa-solid fa-share-nodes"></i> 快速調撥至部門
+                                    </p>
+                                    <div class="space-y-1.5">
+                                        <select id="dispatch-dept-select-${item.id}" class="w-full border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500">
+                                            ${deptOptions}
+                                        </select>
+                                        <input type="text" id="dispatch-user-input-${item.id}" placeholder="同仁姓名" class="w-full border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500">
+                                        <button onclick="dispatchToDept('${item.id}')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-1 rounded text-xs font-medium transition">
+                                            確認調撥 1 ${item.unit}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-slate-100 pt-2 flex items-center justify-between gap-1">
+                                    <button onclick="startEditItem('${item.id}')" title="編輯品項" class="flex-1 bg-slate-100 hover:bg-indigo-50 text-indigo-600 py-1 rounded text-xs transition font-medium flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-pen"></i> 編輯
+                                    </button>
+                                    <button onclick="scrapFromMIS('${item.id}')" title="報廢註銷" class="flex-1 bg-slate-100 hover:bg-rose-50 text-rose-600 py-1 rounded text-xs transition font-medium flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-trash-can"></i> 報廢
+                                    </button>
+                                    <button onclick="deleteMISItem('${item.id}')" title="永久刪除" class="flex-1 bg-slate-100 hover:bg-rose-100 text-rose-700 py-1 rounded text-xs transition font-medium flex items-center justify-center gap-1">
+                                        <i class="fa-solid fa-xmark"></i> 刪除
+                                    </button>
+                                </div>
                             </div>
                         </td>
                     `;
