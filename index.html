@@ -15,7 +15,6 @@
             color: #4f46e5;
             border-bottom-color: #4f46e5;
         }
-        /* Toast 輕量通知動畫 */
         @keyframes fadeInOut {
             0% { opacity: 0; transform: translateY(-20px); }
             15% { opacity: 1; transform: translateY(0); }
@@ -26,7 +25,6 @@
             animation: fadeInOut 3s forwards;
         }
 
-        /* 列印專用 A4 樣式控制 */
         @media print {
             .no-print {
                 display: none !important;
@@ -87,7 +85,7 @@
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen">
 
-    <!-- 列印專用報表抬頭 (僅在列印時顯示) -->
+    <!-- 列印專用報表抬頭 -->
     <div id="print-header" class="print-only p-4 mb-4 border-b border-slate-400">
         <div class="flex justify-between items-center">
             <div>
@@ -191,7 +189,6 @@
         <!-- TAB 1: MIS 總倉與新品項主動建檔 -->
         <div id="tab-inventory" class="tab-content space-y-4">
             
-            <!-- MIS 人員品項建檔區 -->
             <div class="bg-indigo-900/5 border border-indigo-200 p-4 rounded-xl shadow-sm no-print">
                 <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
                     <div class="flex items-center gap-2">
@@ -203,7 +200,6 @@
                     </button>
                 </div>
 
-                <!-- 展開式編號規則與代碼對照說明卡片 -->
                 <div id="code-guide-panel" class="hidden mb-4 p-3.5 bg-white border border-indigo-100 rounded-lg text-xs space-y-3">
                     <div class="flex flex-wrap justify-between items-center border-b border-slate-100 pb-2 gap-2">
                         <span class="font-bold text-indigo-900 flex items-center gap-1.5">
@@ -217,7 +213,6 @@
                         </div>
                     </div>
 
-                    <!-- 新增/編輯對照規則內嵌表單 -->
                     <form id="rule-edit-form" onsubmit="handleSaveRule(event)" class="hidden bg-indigo-50/60 p-2.5 rounded border border-indigo-200 text-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
                         <input type="hidden" id="rule-edit-id">
                         <div>
@@ -282,7 +277,7 @@
                 </form>
             </div>
 
-            <!-- 總倉過濾與日期篩選、列印 -->
+            <!-- 過濾與列印 -->
             <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-3 no-print">
                 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                     <div class="relative w-full sm:w-56">
@@ -501,7 +496,8 @@
                                 <th class="p-3">原來源/單位</th>
                                 <th class="p-3 text-center">報廢數量</th>
                                 <th class="p-3">報廢原因 / 狀態描述</th>
-                                <th class="p-3">註銷日期</th>
+                                <th class="p-3 text-center">註銷日期</th>
+                                <th class="p-3 text-center no-print">管理操作</th>
                             </tr>
                         </thead>
                         <tbody id="scrapped-tbody" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
@@ -513,7 +509,7 @@
 
     </main>
 
-    <!-- 列印專用簽核欄 (僅在列印時顯示) -->
+    <!-- 列印專用簽核欄 -->
     <div id="print-footer" class="print-only p-4 mt-8 border-t border-slate-300">
         <div class="grid grid-cols-3 gap-8 text-xs text-slate-700 text-center">
             <div>
@@ -532,12 +528,8 @@
     </div>
 
     <script>
-        // 常數設定 (8個指定部門)
         const DEPARTMENTS = ["管理部", "製造部", "工程部", "SMT", "資材部", "業務部", "DIP", "品保部"];
 
-        // ------------------------------------------------------------------
-        // Firebase 設定與初始化 (已填入您的真實金鑰)
-        // ------------------------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyAouW6UslMyPwQiQ7gXLUBPTzY0BuwF2kE",
             authDomain: "mis-asset-system.firebaseapp.com",
@@ -561,42 +553,21 @@
             isFirebaseConnected = false;
         }
 
-        // 核心預設資料集
-        let misInventory = [
-            { id: "FA-2026-001", name: 'MacBook Pro 16"', category: "固定資產", spec: "M3 Pro 36G", qty: 6, minQty: 2, unit: "台", date: "2026-01-05" },
-            { id: "FA-2026-002", name: 'Dell 27" 螢幕 (U2723QE)', category: "固定資產", spec: "4K Type-C", qty: 15, minQty: 4, unit: "台", date: "2026-01-10" },
-            { id: "CON-HDMI-01", name: "Type-C 轉 HDMI 轉接線", category: "耗材/小物件", spec: "4K60Hz 黑色", qty: 3, minQty: 10, unit: "條", date: "2026-02-01" },
-            { id: "CON-NET-002", name: "CAT6 網路線 (2m)", category: "耗材/小物件", spec: "扁線 黑色", qty: 45, minQty: 15, unit: "條", date: "2026-02-15" },
-            { id: "CON-BAT-001", name: "CR2032 鈕扣電池", category: "耗材/小物件", spec: "主機板 BIOS 用", qty: 2, minQty: 5, unit: "顆", date: "2026-03-01" },
-            { id: "ACC-MS-270", name: "Logitech 無線滑鼠 MK270", category: "週邊配件", spec: "2.4G 鍵鼠組", qty: 8, minQty: 4, unit: "組", date: "2026-03-10" }
-        ];
-
+        // 資料歸零（預設空陣列，由使用者自行建立與新增）
+        let misInventory = [];
         let codeRules = [
             { id: "R-01", prefix: "FA-xxxx", title: "固定資產", example: "FA-2026-001", desc: "高價值設備如筆電、螢幕、伺服器。" },
             { id: "R-02", prefix: "CON-xxxx", title: "耗材/小物件", example: "CON-HDMI-01", desc: "轉接線、網路線、電池、水晶頭。" },
             { id: "R-03", prefix: "ACC-xxxx", title: "週邊配件", example: "ACC-MS-002", desc: "鍵盤、滑鼠、擴充埠、耳機機組。" },
             { id: "R-04", prefix: "[部門代碼]-xxxx", title: "專用物件", example: "SMT-LINE-05", desc: "特定部門使用之儀器或量具配件。" }
         ];
+        let deptAssets = [];
+        let requests = [];
+        let scrappedLogs = [];
 
-        let deptAssets = [
-            { id: "DA-101", dept: "工程部", user: "Ken", itemName: 'MacBook Pro 16"', qty: 1, unit: "台", date: "2026-01-10" },
-            { id: "DA-102", dept: "資材部", user: "Emily", itemName: "Type-C 轉 HDMI 轉接線", qty: 2, unit: "條", date: "2026-02-15" },
-            { id: "DA-103", dept: "管理部", user: "Lisa", itemName: 'Dell 27" 螢幕 (U2723QE)', qty: 1, unit: "台", date: "2026-03-01" }
-        ];
-
-        let requests = [
-            { reqId: "REQ-501", user: "Sam", dept: "SMT", itemName: "Type-C 轉 HDMI 轉接線", qty: 1 },
-            { reqId: "REQ-502", user: "Jessica", dept: "業務部", itemName: "Logitech 無線滑鼠 MK270", qty: 1 }
-        ];
-
-        let scrappedLogs = [
-            { scrapId: "SCR-901", itemName: "CAT6 網路線 (2m)", source: "工程部 (John)", qty: 2, unit: "條", reason: "線頭外露接觸不良", date: "2026-02-20" },
-            { scrapId: "SCR-902", itemName: "舊型 VGA 轉接頭", source: "MIS 總倉", qty: 5, unit: "個", reason: "規格淘汰無修復價值", date: "2026-03-05" }
-        ];
-
-        // 分頁與狀態變數
         let currentDeptFilter = 'ALL';
         let editingItemId = null;
+        let editingScrapId = null; // 報廢紀錄編輯中 ID
 
         let invPage = 1, invLimit = 10;
         let deptPage = 1, deptLimit = 10;
@@ -615,10 +586,8 @@
                 statusText.innerText = "Firebase 雲端實時同步中";
 
                 db.collection('misInventory').onSnapshot(snapshot => {
-                    if (!snapshot.empty) {
-                        misInventory = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
-                        renderMISInventory();
-                    }
+                    misInventory = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
+                    renderMISInventory();
                 });
 
                 db.collection('codeRules').onSnapshot(snapshot => {
@@ -629,24 +598,18 @@
                 });
 
                 db.collection('deptAssets').onSnapshot(snapshot => {
-                    if (!snapshot.empty) {
-                        deptAssets = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
-                        renderDeptAssets();
-                    }
+                    deptAssets = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
+                    renderDeptAssets();
                 });
 
                 db.collection('requests').onSnapshot(snapshot => {
-                    if (!snapshot.empty) {
-                        requests = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
-                        renderRequests();
-                    }
+                    requests = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
+                    renderRequests();
                 });
 
                 db.collection('scrappedLogs').onSnapshot(snapshot => {
-                    if (!snapshot.empty) {
-                        scrappedLogs = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
-                        renderScrappedLogs();
-                    }
+                    scrappedLogs = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
+                    renderScrappedLogs();
                 });
 
             } else {
@@ -667,10 +630,8 @@
             }
         }
 
-        // 儲存狀態 (同步寫入 Firebase 或 LocalStorage)
         function saveAllState() {
             if (isFirebaseConnected && db) {
-                // 雲端備份邏輯
                 misInventory.forEach(item => db.collection('misInventory').doc(item.id).set(item, { merge: true }));
                 codeRules.forEach(rule => db.collection('codeRules').doc(rule.id).set(rule, { merge: true }));
                 deptAssets.forEach(asset => db.collection('deptAssets').doc(asset.id).set(asset, { merge: true }));
@@ -1343,6 +1304,7 @@
             showToast(`已退回【${req.user}】的領用申請單！`);
         }
 
+        // 報廢紀錄渲染與編輯
         function renderScrappedLogs() {
             const tbody = document.getElementById('scrapped-tbody');
             const startDate = document.getElementById('scrap-start-date').value;
@@ -1365,16 +1327,60 @@
             const displayList = scrapLimit === 0 ? filtered : filtered.slice(startIdx, startIdx + scrapLimit);
 
             displayList.forEach(log => {
+                const isEditing = editingScrapId === log.scrapId;
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
-                tr.innerHTML = `
-                    <td class="p-3 font-mono text-rose-600 font-semibold text-xs">${log.scrapId}</td>
-                    <td class="p-3 font-bold text-slate-800">${log.itemName}</td>
-                    <td class="p-3 text-slate-600 text-xs">${log.source}</td>
-                    <td class="p-3 text-center font-bold text-rose-600">${log.qty} ${log.unit}</td>
-                    <td class="p-3 text-slate-500 text-xs">${log.reason}</td>
-                    <td class="p-3 text-slate-400 text-xs">${log.date}</td>
-                `;
+                tr.className = isEditing ? "bg-amber-50/60 transition border-b border-amber-200" : "hover:bg-slate-50 transition border-b border-slate-100";
+
+                if (isEditing) {
+                    tr.innerHTML = `
+                        <td class="p-3 font-mono text-rose-600 text-xs align-middle">
+                            <input type="text" id="edit-scrap-id-${log.scrapId}" value="${log.scrapId}" class="w-full border border-indigo-300 rounded px-1.5 py-1 text-xs font-mono font-bold bg-white shadow-sm">
+                        </td>
+                        <td class="p-3 align-middle">
+                            <input type="text" id="edit-scrap-name-${log.scrapId}" value="${log.itemName}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs font-bold bg-white shadow-sm">
+                        </td>
+                        <td class="p-3 align-middle">
+                            <input type="text" id="edit-scrap-source-${log.scrapId}" value="${log.source}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs bg-white shadow-sm">
+                        </td>
+                        <td class="p-3 text-center align-middle">
+                            <div class="inline-flex items-center gap-1">
+                                <input type="number" id="edit-scrap-qty-${log.scrapId}" min="1" value="${log.qty}" class="w-12 border border-indigo-300 rounded px-1 py-1 text-xs text-center bg-white shadow-sm">
+                                <input type="text" id="edit-scrap-unit-${log.scrapId}" value="${log.unit}" class="w-10 border border-indigo-300 rounded px-1 py-0.5 text-xs text-center bg-white shadow-sm">
+                            </div>
+                        </td>
+                        <td class="p-3 align-middle">
+                            <input type="text" id="edit-scrap-reason-${log.scrapId}" value="${log.reason}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs bg-white shadow-sm">
+                        </td>
+                        <td class="p-3 text-center align-middle">
+                            <input type="date" id="edit-scrap-date-${log.scrapId}" value="${log.date}" class="border border-indigo-300 rounded px-1 py-1 text-xs bg-white shadow-sm">
+                        </td>
+                        <td class="p-3 text-center align-middle no-print">
+                            <div class="inline-flex items-center gap-1">
+                                <button onclick="saveEditScrap('${log.scrapId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs font-medium shadow-sm transition">儲存</button>
+                                <button onclick="cancelEditScrap()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs font-medium transition">取消</button>
+                            </div>
+                        </td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td class="p-3 font-mono text-rose-600 font-semibold text-xs align-middle">${log.scrapId}</td>
+                        <td class="p-3 font-bold text-slate-800 align-middle">${log.itemName}</td>
+                        <td class="p-3 text-slate-600 text-xs align-middle">${log.source}</td>
+                        <td class="p-3 text-center font-bold text-rose-600 align-middle">${log.qty} ${log.unit}</td>
+                        <td class="p-3 text-slate-500 text-xs align-middle">${log.reason}</td>
+                        <td class="p-3 text-center text-slate-400 text-xs align-middle">${log.date}</td>
+                        <td class="p-3 text-center align-middle no-print">
+                            <div class="inline-flex items-center gap-1">
+                                <button onclick="startEditScrap('${log.scrapId}')" title="編輯報廢紀錄" class="bg-slate-100 hover:bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-xs transition font-medium flex items-center gap-1">
+                                    <i class="fa-solid fa-pen-to-square"></i> 編輯
+                                </button>
+                                <button onclick="deleteScrapLog('${log.scrapId}')" title="刪除報廢紀錄" class="bg-slate-100 hover:bg-rose-50 text-rose-600 px-2 py-1 rounded text-xs transition font-medium">
+                                    <i class="fa-solid fa-trash-can"></i> 刪除
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                }
                 tbody.appendChild(tr);
             });
 
@@ -1385,6 +1391,62 @@
             });
 
             updateKPIs();
+        }
+
+        function startEditScrap(scrapId) {
+            editingScrapId = scrapId;
+            renderScrappedLogs();
+        }
+
+        function cancelEditScrap() {
+            editingScrapId = null;
+            renderScrappedLogs();
+        }
+
+        function saveEditScrap(oldId) {
+            const log = scrappedLogs.find(l => l.scrapId === oldId);
+            if (!log) return;
+
+            const newId = document.getElementById(`edit-scrap-id-${oldId}`).value.trim();
+            const newName = document.getElementById(`edit-scrap-name-${oldId}`).value.trim();
+            const newSource = document.getElementById(`edit-scrap-source-${oldId}`).value.trim();
+            const newQty = parseInt(document.getElementById(`edit-scrap-qty-${oldId}`).value) || 1;
+            const newUnit = document.getElementById(`edit-scrap-unit-${oldId}`).value.trim() || "個";
+            const newReason = document.getElementById(`edit-scrap-reason-${oldId}`).value.trim() || "無";
+            const newDate = document.getElementById(`edit-scrap-date-${oldId}`).value || new Date().toISOString().split('T')[0];
+
+            if (!newId || !newName) {
+                showToast('報廢編號與物品名稱不可為空！', 'error');
+                return;
+            }
+
+            if (newId !== oldId && isFirebaseConnected && db) {
+                db.collection('scrappedLogs').doc(oldId).delete();
+            }
+
+            log.scrapId = newId;
+            log.itemName = newName;
+            log.source = newSource;
+            log.qty = newQty;
+            log.unit = newUnit;
+            log.reason = newReason;
+            log.date = newDate;
+
+            saveAllState();
+            editingScrapId = null;
+            renderScrappedLogs();
+            showToast(`報廢紀錄【${newId}】已修訂儲存！`);
+        }
+
+        function deleteScrapLog(scrapId) {
+            const index = scrappedLogs.findIndex(l => l.scrapId === scrapId);
+            if (index > -1) {
+                if (isFirebaseConnected && db) db.collection('scrappedLogs').doc(scrapId).delete();
+                scrappedLogs.splice(index, 1);
+                saveAllState();
+                renderScrappedLogs();
+                showToast(`已刪除報廢紀錄【${scrapId}】`);
+            }
         }
 
         function renderPaginationUI(containerId, currentPage, totalPages, totalRows, currentLimit, onPageChange) {
