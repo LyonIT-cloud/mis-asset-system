@@ -408,6 +408,14 @@
                 </form>
             </div>
 
+            <!-- 下方顯示已經建立的編號自訂對照表 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                <h4 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-barcode text-indigo-500"></i> 現有企業資產與編號對照表參考
+                </h4>
+                <div id="tab3-code-rules-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-slate-600 text-xs"></div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-3 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700">
                     待處理線上申請清單
@@ -585,7 +593,6 @@
                 actionBtn.innerText = "MIS 管理員登入";
                 if (createPanel) createPanel.classList.add('hidden');
             }
-            // 控制表格中的管理欄位顯示
             document.querySelectorAll('.admin-only-col').forEach(el => {
                 el.style.display = isAdmin ? '' : 'none';
             });
@@ -678,32 +685,37 @@
 
         function renderCodeRules() {
             const container = document.getElementById('code-rules-grid');
-            if (!container) return;
-            container.innerHTML = '';
-
-            codeRules.forEach(rule => {
-                const card = document.createElement('div');
-                card.className = "p-2 bg-slate-50 rounded border border-slate-200 relative group hover:border-indigo-300 transition cursor-pointer";
-                card.title = "點擊以套用此外框編號至建檔";
-                card.onclick = () => {
-                    if (isAdmin) {
-                        document.getElementById('new-item-id').value = rule.prefix;
-                        showToast(`已帶入編號：${rule.prefix}`);
-                    }
-                };
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-1">
-                        <p class="font-bold text-indigo-700">${rule.prefix} <span class="text-slate-500 font-normal">(${rule.title})</span></p>
-                        ${isAdmin ? `
-                        <div class="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition no-print">
-                            <button type="button" onclick="event.stopPropagation(); startEditRule('${rule.id}')" title="編輯" class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
-                            <button type="button" onclick="event.stopPropagation(); deleteCodeRule('${rule.id}')" title="刪除" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-xmark"></i></button>
-                        </div>` : ''}
-                    </div>
-                    <p class="text-[11px] text-slate-500">點擊直接帶入編號</p>
-                    <p class="text-[11px] text-slate-500 mt-0.5">${rule.desc}</p>
-                `;
-                container.appendChild(card);
+            const tab3Container = document.getElementById('tab3-code-rules-grid');
+            
+            [container, tab3Container].forEach(cnt => {
+                if (!cnt) return;
+                cnt.innerHTML = '';
+                codeRules.forEach(rule => {
+                    const card = document.createElement('div');
+                    card.className = "p-2.5 bg-slate-50 rounded border border-slate-200 relative group hover:border-indigo-300 transition cursor-pointer";
+                    card.title = "點擊以套用此外框編號至建檔";
+                    card.onclick = () => {
+                        if (isAdmin || cnt.id === 'tab3-code-rules-grid') {
+                            const input = document.getElementById('new-item-id');
+                            if (input) {
+                                input.value = rule.prefix;
+                                showToast(`已帶入編號：${rule.prefix}`);
+                            }
+                        }
+                    };
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-1">
+                            <p class="font-bold text-indigo-700">${rule.prefix} <span class="text-slate-500 font-normal">(${rule.title})</span></p>
+                            ${isAdmin && cnt.id !== 'tab3-code-rules-grid' ? `
+                            <div class="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition no-print">
+                                <button type="button" onclick="event.stopPropagation(); startEditRule('${rule.id}')" title="編輯" class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
+                                <button type="button" onclick="event.stopPropagation(); deleteCodeRule('${rule.id}')" title="刪除" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-xmark"></i></button>
+                            </div>` : ''}
+                        </div>
+                        <p class="text-[11px] text-slate-500">${rule.desc}</p>
+                    `;
+                    cnt.appendChild(card);
+                });
             });
         }
 
@@ -794,7 +806,10 @@
 
             if (tab === 'inventory') renderMISInventory();
             if (tab === 'dept') renderDeptAssets();
-            if (tab === 'requests') renderRequests();
+            if (tab === 'requests') {
+                renderRequests();
+                renderCodeRules();
+            }
             if (tab === 'scrapped') renderScrappedLogs();
         }
 
@@ -912,7 +927,7 @@
                                 <i class="fa-solid fa-ellipsis-vertical"></i> 操作
                             </button>
                             
-                            <div id="action-menu-${item.docId}" class="action-menu-dropdown hidden absolute right-8 top-10 w-60 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-3 text-left space-y-3">
+                            <div id="action-menu-${item.docId}" class="action-menu-dropdown hidden absolute right-8 top-10 w-60 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-3 text-left space-y-3" onclick="event.stopPropagation()">
                                 <div>
                                     <p class="text-[11px] font-bold text-slate-400 uppercase mb-1.5 flex items-center gap-1">
                                         <i class="fa-solid fa-share-nodes"></i> 快速調撥至部門
@@ -944,7 +959,6 @@
             updateReqSelectOptions();
             updateKPIs();
             
-            // 隱藏非管理員的內部操作
             if (!isAdmin) {
                 document.querySelectorAll('.admin-only-actions').forEach(el => el.style.display = 'none');
             }
@@ -1036,11 +1050,12 @@
                     reason: "故障損壞 / 註銷",
                     date: new Date().toISOString().split('T')[0]
                 };
-                scrappedLogs.push(newScrap);
+                const scrapDocId = `scrap_${Date.now()}`;
+                scrappedLogs.push({ ...newScrap, docId: scrapDocId });
 
                 if (isFirebaseConnected && db) {
                     db.collection('misInventory').doc(docId).set(item, { merge: true });
-                    db.collection('scrappedLogs').doc(newScrap.scrapId).set(newScrap);
+                    db.collection('scrappedLogs').doc(scrapDocId).set(newScrap);
                 }
 
                 saveAllState();
@@ -1166,6 +1181,10 @@
             });
 
             updateKPIs();
+            
+            if (!isAdmin) {
+                document.querySelectorAll('.admin-only-col').forEach(el => el.style.display = 'none');
+            }
         }
 
         function setDeptFilter(dept) {
@@ -1210,11 +1229,12 @@
                     reason: "部門使用壞損報廢",
                     date: new Date().toISOString().split('T')[0]
                 };
-                scrappedLogs.unshift(newScrap);
+                const scrapDocId = `scrap_${Date.now()}`;
+                scrappedLogs.unshift({ ...newScrap, docId: scrapDocId });
 
                 if (isFirebaseConnected && db) {
                     db.collection('deptAssets').doc(docId).delete();
-                    db.collection('scrappedLogs').doc(newScrap.scrapId).set(newScrap);
+                    db.collection('scrappedLogs').doc(scrapDocId).set(newScrap);
                 }
 
                 deptAssets.splice(index, 1);
@@ -1228,6 +1248,7 @@
         function renderRequests() {
             const tbody = document.getElementById('requests-tbody');
             const badge = document.getElementById('pending-badge');
+            if(!tbody) return;
             tbody.innerHTML = '';
             badge.innerText = requests.length;
 
@@ -1248,13 +1269,17 @@
                     </td>
                     <td class="p-3 text-center admin-only-col">
                         <div class="inline-flex justify-center gap-1.5">
-                            <button onclick="approveRequest(${idx})" ${!hasStock ? 'disabled class="bg-slate-200 text-slate-400 px-2.5 py-1 rounded text-xs cursor-not-allowed"' : 'class="bg-emerald-600 text-white px-2.5 py-1 rounded text-xs"'}>核准</button>
-                            <button onclick="rejectRequest(${idx})" class="bg-slate-100 text-rose-600 px-2.5 py-1 rounded text-xs">退回</button>
+                            <button onclick="approveRequest('${req.docId}')" ${!hasStock ? 'disabled class="bg-slate-200 text-slate-400 px-2.5 py-1 rounded text-xs cursor-not-allowed"' : 'class="bg-emerald-600 text-white px-2.5 py-1 rounded text-xs"'}>核准</button>
+                            <button onclick="rejectRequest('${req.docId}')" class="bg-slate-100 text-rose-600 px-2.5 py-1 rounded text-xs">退回</button>
                         </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+
+            if (!isAdmin) {
+                document.querySelectorAll('.admin-only-col').forEach(el => el.style.display = 'none');
+            }
         }
 
         function handleOnlineApply(e) {
@@ -1269,13 +1294,14 @@
                 return;
             }
 
+            const reqDocId = `req_${Date.now()}`;
             const newReq = {
                 reqId: `REQ-${Math.floor(100 + Math.random() * 900)}`,
-                user, dept, itemName, qty
+                user, dept, itemName, qty, docId: reqDocId
             };
             requests.push(newReq);
 
-            if (isFirebaseConnected && db) db.collection('requests').doc(newReq.reqId).set(newReq);
+            if (isFirebaseConnected && db) db.collection('requests').doc(reqDocId).set(newReq);
 
             document.getElementById('req-user-name').value = '';
             saveAllState();
@@ -1292,9 +1318,11 @@
             });
         }
 
-        function approveRequest(idx) {
+        function approveRequest(docId) {
             if (!isAdmin) { promptAdminLogin(); return; }
-            const req = requests[idx];
+            const req = requests.find(r => r.docId === docId);
+            if (!req) return;
+            
             const misItem = misInventory.find(i => i.name === req.itemName);
 
             if (misItem && misItem.qty >= req.qty) {
@@ -1314,10 +1342,10 @@
                 if (isFirebaseConnected && db) {
                     db.collection('misInventory').doc(misItem.docId).set(misItem, { merge: true });
                     db.collection('deptAssets').doc(assetDocId).set(newAsset);
-                    db.collection('requests').doc(req.reqId).delete();
+                    db.collection('requests').doc(docId).delete();
                 }
 
-                requests.splice(idx, 1);
+                requests = requests.filter(r => r.docId !== docId);
                 saveAllState();
                 renderMISInventory();
                 renderDeptAssets();
@@ -1326,11 +1354,10 @@
             }
         }
 
-        function rejectRequest(idx) {
+        function rejectRequest(docId) {
             if (!isAdmin) { promptAdminLogin(); return; }
-            const req = requests[idx];
-            if (isFirebaseConnected && db) db.collection('requests').doc(req.reqId).delete();
-            requests.splice(idx, 1);
+            if (isFirebaseConnected && db) db.collection('requests').doc(docId).delete();
+            requests = requests.filter(r => r.docId !== docId);
             saveAllState();
             renderRequests();
             showToast(`已退回申請`);
@@ -1341,6 +1368,7 @@
             const startDate = document.getElementById('scrap-start-date').value;
             const endDate = document.getElementById('scrap-end-date').value;
 
+            if(!tbody) return;
             tbody.innerHTML = '';
 
             let filtered = scrappedLogs.filter(log => {
@@ -1357,7 +1385,7 @@
             const startIdx = (scrapPage - 1) * scrapLimit;
             const displayList = scrapLimit === 0 ? filtered : filtered.slice(startIdx, startIdx + scrapLimit);
 
-            displayList.forEach((log, idx) => {
+            displayList.forEach(log => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
                 tr.innerHTML = `
@@ -1368,7 +1396,7 @@
                     <td class="p-3 text-slate-500 text-xs">${log.reason}</td>
                     <td class="p-3 text-center text-slate-400 text-xs">${log.date}</td>
                     <td class="p-3 text-center no-print admin-only-col">
-                        <button onclick="deleteScrapLog('${log.scrapId}')" class="bg-slate-100 text-rose-600 px-2.5 py-1 rounded text-xs font-medium">刪除紀錄</button>
+                        <button onclick="deleteScrapLog('${log.docId}')" class="bg-slate-100 text-rose-600 px-2.5 py-1 rounded text-xs font-medium">刪除紀錄</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1381,13 +1409,17 @@
             });
 
             updateKPIs();
+            
+            if (!isAdmin) {
+                document.querySelectorAll('.admin-only-col').forEach(el => el.style.display = 'none');
+            }
         }
 
-        function deleteScrapLog(scrapId) {
+        function deleteScrapLog(docId) {
             if (!isAdmin) { promptAdminLogin(); return; }
-            const index = scrappedLogs.findIndex(l => l.scrapId === scrapId);
+            const index = scrappedLogs.findIndex(l => l.docId === docId);
             if (index > -1) {
-                if (isFirebaseConnected && db) db.collection('scrappedLogs').doc(scrapId).delete();
+                if (isFirebaseConnected && db) db.collection('scrappedLogs').doc(docId).delete();
                 scrappedLogs.splice(index, 1);
                 saveAllState();
                 renderScrappedLogs();
