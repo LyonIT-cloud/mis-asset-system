@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIS 跨部門資產與設備管控系統</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase JS App & Firestore SDKs (Compat version for single-file web deployment) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -71,7 +68,6 @@
                 background-color: #f1f5f9 !important;
                 color: #0f172a !important;
             }
-            /* 列印時顯示全資料（解開滾動限制） */
             .table-container {
                 max-height: none !important;
                 overflow: visible !important;
@@ -80,7 +76,6 @@
         .print-only {
             display: none;
         }
-        /* 表格固定表頭樣式 */
         .sticky-thead th {
             position: sticky;
             top: 0;
@@ -120,7 +115,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <!-- 批量 CSV 匯入與匯出按鈕 -->
                 <button onclick="exportToCSV()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
                     <i class="fa-solid fa-file-excel text-emerald-400"></i> 匯出清冊 CSV
                 </button>
@@ -128,7 +122,6 @@
                     <i class="fa-solid fa-file-import text-amber-400"></i> 批量 CSV 匯入
                     <input type="file" id="csv-file-input" accept=".csv" onchange="importCSV(event)" class="hidden">
                 </label>
-                <!-- 雲端同步狀態標籤 -->
                 <div class="flex items-center gap-2 text-xs bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
                     <span id="sync-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
                     <span id="sync-status" class="text-slate-300">本地離線模式 (待配置 Firebase)</span>
@@ -205,7 +198,6 @@
                         <i class="fa-solid fa-plus-circle text-indigo-600"></i>
                         <h3 class="font-bold text-slate-800 text-sm">MIS 資產品項單筆建檔與採購入庫</h3>
                     </div>
-                    <!-- 編號規則說明切換按鈕 -->
                     <button type="button" onclick="toggleCodeGuide()" class="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-lg transition font-medium flex items-center gap-1.5">
                         <i class="fa-solid fa-circle-info"></i> 編號規則與類別代碼對照表
                     </button>
@@ -250,7 +242,6 @@
                         </div>
                     </form>
 
-                    <!-- 動態渲染對照規則清單區 -->
                     <div id="code-rules-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-slate-600"></div>
                 </div>
 
@@ -298,20 +289,17 @@
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <input type="text" id="inventorySearch" oninput="invPage=1; renderMISInventory()" placeholder="搜尋品項名稱、編號..." class="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500">
                     </div>
-                    <!-- 類別過濾 -->
                     <select id="inv-cat-filter" onchange="invPage=1; renderMISInventory()" class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-indigo-500">
                         <option value="ALL">全部類別</option>
                         <option value="耗材/小物件">耗材/小物件</option>
                         <option value="固定資產">固定資產</option>
                         <option value="週邊配件">週邊配件</option>
                     </select>
-                    <!-- 庫存狀態過濾 -->
                     <select id="inv-status-filter" onchange="invPage=1; renderMISInventory()" class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-indigo-500">
                         <option value="ALL">全部狀態</option>
                         <option value="LOW">庫存偏低</option>
                         <option value="NORMAL">存量充足</option>
                     </select>
-                    <!-- 日期區間過濾 -->
                     <div class="flex items-center gap-1.5 text-xs text-slate-600">
                         <span class="font-medium whitespace-nowrap">建檔日期:</span>
                         <input type="date" id="inv-start-date" onchange="invPage=1; renderMISInventory()" class="border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-indigo-500">
@@ -328,7 +316,7 @@
                 </button>
             </div>
 
-            <!-- MIS 總倉表格 (支援 100+ 筆滾動與固定表頭) -->
+            <!-- MIS 總倉表格 -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto table-container max-h-[550px] overflow-y-auto">
                     <table class="w-full text-left border-collapse text-sm">
@@ -350,14 +338,12 @@
                         <tbody id="mis-inventory-tbody" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
                     </table>
                 </div>
-                <!-- 動態分頁列 -->
                 <div id="inv-pagination" class="p-3 bg-slate-50 border-t border-slate-200 flex flex-wrap justify-between items-center text-xs text-slate-500 no-print gap-2"></div>
             </div>
         </div>
 
         <!-- TAB 2: 跨部門保管與領用明細 -->
         <div id="tab-dept" class="tab-content space-y-4 hidden">
-            <!-- 部門分類切換、日期篩選與列印 -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-4 no-print">
                 <div class="flex flex-col gap-3 w-full lg:w-auto">
                     <div class="flex items-center gap-2 overflow-x-auto w-full">
@@ -378,7 +364,6 @@
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                             <input type="text" id="deptSearchInput" oninput="deptPage=1; renderDeptAssets()" placeholder="搜尋同仁、品項..." class="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500">
                         </div>
-                        <!-- 日期區間過濾 -->
                         <div class="flex items-center gap-1.5 text-xs text-slate-600">
                             <span class="font-medium whitespace-nowrap">領用日期區間:</span>
                             <input type="date" id="dept-start-date" onchange="deptPage=1; renderDeptAssets()" class="border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-indigo-500">
@@ -419,7 +404,6 @@
 
         <!-- TAB 3: 線上領用申請與簽核 -->
         <div id="tab-requests" class="tab-content space-y-4 hidden">
-            <!-- 內嵌同仁線上申請區 -->
             <div class="bg-emerald-900/5 border border-emerald-200 p-4 rounded-xl shadow-sm">
                 <div class="flex items-center gap-2 mb-3">
                     <i class="fa-solid fa-paper-plane text-emerald-600"></i>
@@ -459,7 +443,6 @@
                 </form>
             </div>
 
-            <!-- 待簽核清單 -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-3 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700">
                     待處理線上申請清單
@@ -492,7 +475,6 @@
                 </div>
                 
                 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end no-print">
-                    <!-- 日期區間過濾 -->
                     <div class="flex items-center gap-1.5 text-xs text-slate-600">
                         <span class="font-medium whitespace-nowrap">報廢日期區間:</span>
                         <input type="date" id="scrap-start-date" onchange="scrapPage=1; renderScrappedLogs()" class="border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-indigo-500">
@@ -568,7 +550,6 @@
         let db = null;
         let isFirebaseConnected = false;
 
-        // 初始化 Firebase (若未填寫 Key 則會自動啟用 LocalStorage 備用模式)
         try {
             if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
                 firebase.initializeApp(firebaseConfig);
@@ -580,9 +561,7 @@
             isFirebaseConnected = false;
         }
 
-        // ------------------------------------------------------------------
-        // 核心資料集 (預設展示數據，優先讀取 Firebase/LocalStorage)
-        // ------------------------------------------------------------------
+        // 核心預設資料集
         let misInventory = [
             { id: "FA-2026-001", name: 'MacBook Pro 16"', category: "固定資產", spec: "M3 Pro 36G", qty: 6, minQty: 2, unit: "台", date: "2026-01-05" },
             { id: "FA-2026-002", name: 'Dell 27" 螢幕 (U2723QE)', category: "固定資產", spec: "4K Type-C", qty: 15, minQty: 4, unit: "台", date: "2026-01-10" },
@@ -627,7 +606,6 @@
             initDataSync();
         });
 
-        // 綁定 Firebase 實時監聽 (或讀取 LocalStorage)
         function initDataSync() {
             const statusDot = document.getElementById('sync-dot');
             const statusText = document.getElementById('sync-status');
@@ -636,7 +614,6 @@
                 statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
                 statusText.innerText = "Firebase 雲端實時同步中";
 
-                // 實時聽取 Firestore 資料變更
                 db.collection('misInventory').onSnapshot(snapshot => {
                     if (!snapshot.empty) {
                         misInventory = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
@@ -673,7 +650,6 @@
                 });
 
             } else {
-                // LocalStorage 備用持久化機制
                 statusDot.className = "w-2 h-2 rounded-full bg-amber-400";
                 statusText.innerText = "本地離線模式 (資料存於瀏覽器)";
 
@@ -691,9 +667,16 @@
             }
         }
 
-        // 儲存至雲端/本地
+        // 儲存狀態 (同步寫入 Firebase 或 LocalStorage)
         function saveAllState() {
-            if (!isFirebaseConnected) {
+            if (isFirebaseConnected && db) {
+                // 雲端備份邏輯
+                misInventory.forEach(item => db.collection('misInventory').doc(item.id).set(item, { merge: true }));
+                codeRules.forEach(rule => db.collection('codeRules').doc(rule.id).set(rule, { merge: true }));
+                deptAssets.forEach(asset => db.collection('deptAssets').doc(asset.id).set(asset, { merge: true }));
+                requests.forEach(req => db.collection('requests').doc(req.reqId).set(req, { merge: true }));
+                scrappedLogs.forEach(scrap => db.collection('scrappedLogs').doc(scrap.scrapId).set(scrap, { merge: true }));
+            } else {
                 localStorage.setItem('misInventory', JSON.stringify(misInventory));
                 localStorage.setItem('codeRules', JSON.stringify(codeRules));
                 localStorage.setItem('deptAssets', JSON.stringify(deptAssets));
@@ -702,7 +685,6 @@
             }
         }
 
-        // 顯示輕量 Toast 通知
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -809,6 +791,7 @@
             const idx = codeRules.findIndex(r => r.id === ruleId);
             if (idx > -1) {
                 const removed = codeRules.splice(idx, 1)[0];
+                if (isFirebaseConnected && db) db.collection('codeRules').doc(ruleId).delete();
                 saveAllState();
                 renderCodeRules();
                 showToast(`已刪除規則【${removed.prefix}】`);
@@ -1015,6 +998,10 @@
                 return;
             }
 
+            if (newId !== oldId && isFirebaseConnected && db) {
+                db.collection('misInventory').doc(oldId).delete();
+            }
+
             item.id = newId;
             item.name = newName;
             item.category = newCat;
@@ -1053,7 +1040,7 @@
             const item = misInventory.find(i => i.id === id);
             if (item && item.qty >= 1) {
                 item.qty -= 1;
-                scrappedLogs.push({
+                const newScrap = {
                     scrapId: `SCR-${Math.floor(100 + Math.random() * 900)}`,
                     itemName: item.name,
                     source: "MIS 總倉",
@@ -1061,7 +1048,8 @@
                     unit: item.unit,
                     reason: "故障損壞 / 註銷",
                     date: new Date().toISOString().split('T')[0]
-                });
+                };
+                scrappedLogs.push(newScrap);
 
                 saveAllState();
                 renderMISInventory();
@@ -1115,11 +1103,12 @@
 
             if (item && item.qty >= 1) {
                 item.qty -= 1;
-                deptAssets.unshift({
+                const newAsset = {
                     id: `DA-${Math.floor(100 + Math.random() * 900)}`,
                     dept, user, itemName: item.name, qty: 1, unit: item.unit,
                     date: new Date().toISOString().split('T')[0]
-                });
+                };
+                deptAssets.unshift(newAsset);
 
                 userInput.value = '';
                 saveAllState();
@@ -1213,6 +1202,7 @@
                 if (misItem) {
                     misItem.qty += asset.qty;
                 }
+                if (isFirebaseConnected && db) db.collection('deptAssets').doc(assetId).delete();
                 deptAssets.splice(index, 1);
                 saveAllState();
                 renderMISInventory();
@@ -1225,7 +1215,7 @@
             const index = deptAssets.findIndex(a => a.id === assetId);
             if (index > -1) {
                 const asset = deptAssets[index];
-                scrappedLogs.push({
+                const newScrap = {
                     scrapId: `SCR-${Math.floor(100 + Math.random() * 900)}`,
                     itemName: asset.itemName,
                     source: `${asset.dept} (${asset.user})`,
@@ -1233,8 +1223,10 @@
                     unit: asset.unit,
                     reason: "部門使用壞損報廢",
                     date: new Date().toISOString().split('T')[0]
-                });
+                };
+                scrappedLogs.push(newScrap);
 
+                if (isFirebaseConnected && db) db.collection('deptAssets').doc(assetId).delete();
                 deptAssets.splice(index, 1);
                 saveAllState();
                 renderDeptAssets();
@@ -1294,10 +1286,11 @@
                 return;
             }
 
-            requests.push({
+            const newReq = {
                 reqId: `REQ-${Math.floor(100 + Math.random() * 900)}`,
                 user, dept, itemName, qty
-            });
+            };
+            requests.push(newReq);
 
             document.getElementById('req-user-name').value = '';
             saveAllState();
@@ -1329,6 +1322,8 @@
                     unit: misItem.unit,
                     date: new Date().toISOString().split('T')[0]
                 });
+
+                if (isFirebaseConnected && db) db.collection('requests').doc(req.reqId).delete();
                 requests.splice(idx, 1);
 
                 saveAllState();
@@ -1341,6 +1336,7 @@
 
         function rejectRequest(idx) {
             const req = requests[idx];
+            if (isFirebaseConnected && db) db.collection('requests').doc(req.reqId).delete();
             requests.splice(idx, 1);
             saveAllState();
             renderRequests();
