@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MIS 跨部門資產與設備管控系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -24,56 +24,21 @@
         .toast-animate {
             animation: fadeInOut 3s forwards;
         }
-
+        input, select, textarea {
+            font-size: 16px !important; /* 防止 iOS Safari 自動放大 */
+        }
         @media print {
-            .no-print {
-                display: none !important;
-            }
-            body {
-                background-color: #ffffff !important;
-                color: #000000 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            main {
-                max-width: 100% !important;
-                padding: 0 !important;
-            }
-            .print-only {
-                display: block !important;
-            }
-            .tab-content {
-                display: block !important;
-            }
-            .tab-content.print-hidden {
-                display: none !important;
-            }
-            .shadow-sm, .shadow-md, .shadow-lg {
-                box-shadow: none !important;
-            }
-            .border, .border-b, .border-t {
-                border-color: #cbd5e1 !important;
-            }
-            table {
-                width: 100% !important;
-                font-size: 11px !important;
-            }
-            th, td {
-                padding: 6px 8px !important;
-                border: 1px solid #94a3b8 !important;
-            }
-            th {
-                background-color: #f1f5f9 !important;
-                color: #0f172a !important;
-            }
-            .table-container {
-                max-height: none !important;
-                overflow: visible !important;
-            }
+            .no-print { display: none !important; }
+            body { background-color: #ffffff !important; color: #000000 !important; padding: 0 !important; margin: 0 !important; }
+            main { max-width: 100% !important; padding: 0 !important; }
+            .print-only { display: block !important; }
+            .tab-content { display: block !important; }
+            table { width: 100% !important; font-size: 11px !important; }
+            th, td { padding: 6px 8px !important; border: 1px solid #94a3b8 !important; }
+            th { background-color: #f1f5f9 !important; color: #0f172a !important; }
+            .table-container { max-height: none !important; overflow: visible !important; }
         }
-        .print-only {
-            display: none;
-        }
+        .print-only { display: none; }
         .sticky-thead th {
             position: sticky;
             top: 0;
@@ -112,7 +77,13 @@
                     <p class="text-xs text-slate-400">總倉資產管理 ‧ 跨部門保管明細 ‧ 線上領用簽核 ‧ 報廢銷毀紀錄</p>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
+                <!-- 權限登入狀態 -->
+                <div id="auth-status-container" class="flex items-center gap-2 text-xs bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                    <span id="auth-badge" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">一般同仁模式</span>
+                    <button onclick="promptAdminLogin()" id="auth-action-btn" class="text-indigo-400 hover:text-indigo-300 underline font-medium">MIS 管理員登入</button>
+                </div>
+
                 <button onclick="exportToCSV()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
                     <i class="fa-solid fa-file-excel text-emerald-400"></i> 匯出清冊 CSV
                 </button>
@@ -122,7 +93,7 @@
                 </label>
                 <div class="flex items-center gap-2 text-xs bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
                     <span id="sync-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    <span id="sync-status" class="text-slate-300">本地離線模式 (待配置 Firebase)</span>
+                    <span id="sync-status" class="text-slate-300">雲端連線中...</span>
                 </div>
             </div>
         </div>
@@ -189,7 +160,7 @@
         <!-- TAB 1: MIS 總倉與新品項主動建檔 -->
         <div id="tab-inventory" class="tab-content space-y-4">
             
-            <div class="bg-indigo-900/5 border border-indigo-200 p-4 rounded-xl shadow-sm no-print">
+            <div id="admin-create-panel" class="bg-indigo-900/5 border border-indigo-200 p-4 rounded-xl shadow-sm no-print">
                 <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-plus-circle text-indigo-600"></i>
@@ -206,10 +177,10 @@
                             <i class="fa-solid fa-barcode text-indigo-500"></i> 企業資產與小物件編號自訂對照表
                         </span>
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="toggleAddRuleForm()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded transition text-[11px] font-medium flex items-center gap-1">
+                            <button type="button" onclick="toggleAddRuleForm()" class="admin-only bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded transition text-[11px] font-medium flex items-center gap-1">
                                 <i class="fa-solid fa-plus text-[10px]"></i> 新增對照規則
                             </button>
-                            <span class="text-slate-400 text-[11px]">可自由編輯與自訂編號說明</span>
+                            <span class="text-slate-400 text-[11px]">可點擊下方代碼快速填入</span>
                         </div>
                     </div>
 
@@ -217,7 +188,7 @@
                         <input type="hidden" id="rule-edit-id">
                         <div>
                             <label class="block text-slate-600 font-medium mb-0.5">前綴/代碼 *</label>
-                            <input type="text" id="rule-prefix" required placeholder="如 FA-xxxx" class="w-full border border-slate-300 rounded px-2 py-1 focus:outline-none focus:border-indigo-500 font-mono">
+                            <input type="text" id="rule-prefix" required placeholder="如 DGI-01" class="w-full border border-slate-300 rounded px-2 py-1 focus:outline-none focus:border-indigo-500 font-mono">
                         </div>
                         <div>
                             <label class="block text-slate-600 font-medium mb-0.5">說明分類 *</label>
@@ -225,11 +196,11 @@
                         </div>
                         <div>
                             <label class="block text-slate-600 font-medium mb-0.5">範例編號</label>
-                            <input type="text" id="rule-example" placeholder="如 FA-2026-001" class="w-full border border-slate-300 rounded px-2 py-1 focus:outline-none focus:border-indigo-500 font-mono">
+                            <input type="text" id="rule-example" placeholder="如 DGI-01" class="w-full border border-slate-300 rounded px-2 py-1 focus:outline-none focus:border-indigo-500 font-mono">
                         </div>
                         <div>
                             <label class="block text-slate-600 font-medium mb-0.5">適用物品描述</label>
-                            <input type="text" id="rule-desc" placeholder="如 筆電、螢幕..." class="w-full border border-slate-300 rounded px-2 py-1 focus:outline-none focus:border-indigo-500">
+                            <input type="text" id="rule-desc" placeholder="如 職員筆電..." class="w-full border border-slate-300 rounded px-2 py-1 focus:outline-none focus:border-indigo-500">
                         </div>
                         <div class="flex items-end gap-1">
                             <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-1 px-2 rounded transition">儲存</button>
@@ -242,24 +213,24 @@
 
                 <form onsubmit="handleAddNewItem(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 text-xs">
                     <div>
-                        <label class="block text-slate-600 font-medium mb-1">資產/物品編號 (可自訂)</label>
-                        <input type="text" id="new-item-id" placeholder="留空自動生成, 如 FA-001" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 font-mono">
+                        <label class="block text-slate-600 font-medium mb-1">資產/物品編號 (可重複/自訂)</label>
+                        <input type="text" id="new-item-id" placeholder="如 DGI-01" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 font-mono">
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">品項名稱 *</label>
-                        <input type="text" id="new-item-name" required placeholder="如: HDMI 轉接線" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+                        <input type="text" id="new-item-name" required placeholder="如: 職員筆電" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">資產類別 *</label>
                         <select id="new-item-cat" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
-                            <option value="耗材/小物件">耗材/小物件</option>
                             <option value="固定資產">固定資產</option>
+                            <option value="耗材/小物件">耗材/小物件</option>
                             <option value="週邊配件">週邊配件</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">規格 / 備註</label>
-                        <input type="text" id="new-item-spec" placeholder="如: 4K60Hz 黑色" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+                        <input type="text" id="new-item-spec" placeholder="如: Core3-100U" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">初始進貨數 *</label>
@@ -286,8 +257,8 @@
                     </div>
                     <select id="inv-cat-filter" onchange="invPage=1; renderMISInventory()" class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-indigo-500">
                         <option value="ALL">全部類別</option>
-                        <option value="耗材/小物件">耗材/小物件</option>
                         <option value="固定資產">固定資產</option>
+                        <option value="耗材/小物件">耗材/小物件</option>
                         <option value="週邊配件">週邊配件</option>
                     </select>
                     <select id="inv-status-filter" onchange="invPage=1; renderMISInventory()" class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-indigo-500">
@@ -325,7 +296,7 @@
                                 <th class="p-3 text-center w-20">最低安全庫存</th>
                                 <th class="p-3 text-center w-24">庫存狀態</th>
                                 <th class="p-3 text-center w-24">入庫日期</th>
-                                <th class="p-3 text-center w-20 no-print">庫存微調</th>
+                                <th class="p-3 text-center w-20 no-print admin-only-col">庫存微調</th>
                                 <th class="p-3 text-center w-24 no-print">快速操作</th>
                             </tr>
                         </thead>
@@ -386,7 +357,7 @@
                                 <th class="p-3">物品名稱</th>
                                 <th class="p-3 text-center">領用數量</th>
                                 <th class="p-3">撥發 / 領用日期</th>
-                                <th class="p-3 text-center no-print">處置操作</th>
+                                <th class="p-3 text-center no-print admin-only-col">處置操作</th>
                             </tr>
                         </thead>
                         <tbody id="dept-assets-tbody" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
@@ -451,7 +422,7 @@
                                 <th class="p-3">申請品項</th>
                                 <th class="p-3 text-center">需求數量</th>
                                 <th class="p-3 text-center">總倉現貨狀態</th>
-                                <th class="p-3 text-center">簽核審核操作</th>
+                                <th class="p-3 text-center admin-only-col">簽核審核操作</th>
                             </tr>
                         </thead>
                         <tbody id="requests-tbody" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
@@ -496,7 +467,7 @@
                                 <th class="p-3 text-center">報廢數量</th>
                                 <th class="p-3">報廢原因 / 狀態描述</th>
                                 <th class="p-3 text-center">註銷日期</th>
-                                <th class="p-3 text-center no-print">管理操作</th>
+                                <th class="p-3 text-center no-print admin-only-col">管理操作</th>
                             </tr>
                         </thead>
                         <tbody id="scrapped-tbody" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
@@ -540,6 +511,7 @@
 
         let db = null;
         let isFirebaseConnected = false;
+        let isAdmin = localStorage.getItem('mis_is_admin') === 'true';
 
         try {
             if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
@@ -554,10 +526,10 @@
 
         let misInventory = [];
         let codeRules = [
-            { id: "R-01", prefix: "FA-xxxx", title: "固定資產", example: "FA-2026-001", desc: "高價值設備如筆電、螢幕、伺服器。" },
-            { id: "R-02", prefix: "CON-xxxx", title: "耗材/小物件", example: "CON-HDMI-01", desc: "轉接線、網路線、電池、水晶頭。" },
-            { id: "R-03", prefix: "ACC-xxxx", title: "週邊配件", example: "ACC-MS-002", desc: "鍵盤、滑鼠、擴充埠、耳機機組。" },
-            { id: "R-04", prefix: "[部門代碼]-xxxx", title: "專用物件", example: "SMT-LINE-05", desc: "特定部門使用之儀器或量具配件。" }
+            { id: "R-01", prefix: "DGI-01", title: "固定資產", example: "DGI-01", desc: "高價值設備如筆電、螢幕。" },
+            { id: "R-02", prefix: "DGI-02", title: "耗材/小物件", example: "DGI-02", desc: "轉接線、網路線、電池。" },
+            { id: "R-03", prefix: "DGI-03", title: "週邊配件", example: "DGI-03", desc: "鍵盤、滑鼠、擴充埠。" },
+            { id: "R-04", prefix: "DGI-04", title: "專用物件", example: "DGI-04", desc: "特定部門儀器或量具。" }
         ];
         let deptAssets = [];
         let requests = [];
@@ -572,8 +544,56 @@
         let scrapPage = 1, scrapLimit = 10;
 
         document.addEventListener('DOMContentLoaded', () => {
+            updateAuthUI();
             initDataSync();
         });
+
+        function promptAdminLogin() {
+            if (isAdmin) {
+                if (confirm("確定要登出 MIS 管理員身分嗎？")) {
+                    isAdmin = false;
+                    localStorage.setItem('mis_is_admin', 'false');
+                    updateAuthUI();
+                    showToast("已切換為一般同仁模式");
+                }
+            } else {
+                const pwd = prompt("請輸入 MIS 管理員密碼：");
+                if (pwd === "mis") {
+                    isAdmin = true;
+                    localStorage.setItem('mis_is_admin', 'true');
+                    updateAuthUI();
+                    showToast("MIS 管理員身分驗證成功！");
+                } else if (pwd !== null) {
+                    showToast("密碼錯誤！", "error");
+                }
+            }
+        }
+
+        function updateAuthUI() {
+            const badge = document.getElementById('auth-badge');
+            const actionBtn = document.getElementById('auth-action-btn');
+            const createPanel = document.getElementById('admin-create-panel');
+            
+            if (isAdmin) {
+                badge.className = "px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold";
+                badge.innerText = "MIS 管理員模式";
+                actionBtn.innerText = "登出管理員";
+                if (createPanel) createPanel.classList.remove('hidden');
+            } else {
+                badge.className = "px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold";
+                badge.innerText = "一般同仁模式";
+                actionBtn.innerText = "MIS 管理員登入";
+                if (createPanel) createPanel.classList.add('hidden');
+            }
+            // 控制表格中的管理欄位顯示
+            document.querySelectorAll('.admin-only-col').forEach(el => {
+                el.style.display = isAdmin ? '' : 'none';
+            });
+            renderMISInventory();
+            renderDeptAssets();
+            renderRequests();
+            renderScrappedLogs();
+        }
 
         function initDataSync() {
             const statusDot = document.getElementById('sync-dot');
@@ -612,7 +632,7 @@
 
             } else {
                 statusDot.className = "w-2 h-2 rounded-full bg-amber-400";
-                statusText.innerText = "本地離線模式 (資料存於瀏覽器)";
+                statusText.innerText = "本地離線模式";
 
                 if (localStorage.getItem('misInventory')) misInventory = JSON.parse(localStorage.getItem('misInventory'));
                 if (localStorage.getItem('codeRules')) codeRules = JSON.parse(localStorage.getItem('codeRules'));
@@ -663,20 +683,24 @@
 
             codeRules.forEach(rule => {
                 const card = document.createElement('div');
-                card.className = "p-2 bg-slate-50 rounded border border-slate-200 relative group hover:border-indigo-300 transition";
+                card.className = "p-2 bg-slate-50 rounded border border-slate-200 relative group hover:border-indigo-300 transition cursor-pointer";
+                card.title = "點擊以套用此外框編號至建檔";
+                card.onclick = () => {
+                    if (isAdmin) {
+                        document.getElementById('new-item-id').value = rule.prefix;
+                        showToast(`已帶入編號：${rule.prefix}`);
+                    }
+                };
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-1">
-                        <p class="font-bold text-slate-800">${rule.prefix} <span class="text-slate-500 font-normal">(${rule.title})</span></p>
+                        <p class="font-bold text-indigo-700">${rule.prefix} <span class="text-slate-500 font-normal">(${rule.title})</span></p>
+                        ${isAdmin ? `
                         <div class="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition no-print">
-                            <button type="button" onclick="startEditRule('${rule.id}')" title="編輯規則" class="text-indigo-600 hover:text-indigo-800">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
-                            <button type="button" onclick="deleteCodeRule('${rule.id}')" title="刪除規則" class="text-rose-500 hover:text-rose-700">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
+                            <button type="button" onclick="event.stopPropagation(); startEditRule('${rule.id}')" title="編輯" class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
+                            <button type="button" onclick="event.stopPropagation(); deleteCodeRule('${rule.id}')" title="刪除" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-xmark"></i></button>
+                        </div>` : ''}
                     </div>
-                    <p class="text-[11px] text-slate-500">例如：<code class="text-indigo-600 font-bold font-mono">${rule.example}</code></p>
+                    <p class="text-[11px] text-slate-500">點擊直接帶入編號</p>
                     <p class="text-[11px] text-slate-500 mt-0.5">${rule.desc}</p>
                 `;
                 container.appendChild(card);
@@ -684,6 +708,7 @@
         }
 
         function toggleAddRuleForm() {
+            if (!isAdmin) { promptAdminLogin(); return; }
             const form = document.getElementById('rule-edit-form');
             if (!form) return;
             document.getElementById('rule-edit-id').value = '';
@@ -695,6 +720,7 @@
         }
 
         function startEditRule(ruleId) {
+            if (!isAdmin) { promptAdminLogin(); return; }
             const rule = codeRules.find(r => r.id === ruleId);
             if (!rule) return;
             const form = document.getElementById('rule-edit-form');
@@ -714,6 +740,7 @@
 
         function handleSaveRule(e) {
             e.preventDefault();
+            if (!isAdmin) { promptAdminLogin(); return; }
             const id = document.getElementById('rule-edit-id').value;
             const prefix = document.getElementById('rule-prefix').value.trim();
             const title = document.getElementById('rule-title').value.trim();
@@ -742,6 +769,7 @@
         }
 
         function deleteCodeRule(ruleId) {
+            if (!isAdmin) { promptAdminLogin(); return; }
             const idx = codeRules.findIndex(r => r.id === ruleId);
             if (idx > -1) {
                 const removed = codeRules.splice(idx, 1)[0];
@@ -770,7 +798,6 @@
             if (tab === 'scrapped') renderScrappedLogs();
         }
 
-        // 展開/收合操作選單
         function toggleActionMenu(event, id) {
             event.stopPropagation();
             document.querySelectorAll('.action-menu-dropdown').forEach(menu => {
@@ -822,9 +849,9 @@
             displayList.forEach(item => {
                 const isLow = item.qty <= item.minQty;
                 const deptOptions = DEPARTMENTS.map(d => `<option value="${d}">${d}</option>`).join('');
-                const categories = ["耗材/小物件", "固定資產", "週邊配件"];
+                const categories = ["固定資產", "耗材/小物件", "週邊配件"];
 
-                const isEditing = editingItemId === item.id;
+                const isEditing = editingItemId === item.docId;
                 const tr = document.createElement('tr');
                 tr.className = isEditing ? "bg-amber-50/60 transition border-b border-amber-200" : "hover:bg-slate-50 transition border-b border-slate-100";
 
@@ -832,38 +859,29 @@
                     const catOptions = categories.map(c => `<option value="${c}" ${item.category === c ? 'selected' : ''}>${c}</option>`).join('');
                     tr.innerHTML = `
                         <td class="p-3 font-mono text-slate-600 text-xs align-middle">
-                            <input type="text" id="edit-id-${item.id}" value="${item.id}" placeholder="編號" class="w-full border border-indigo-300 rounded px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono font-bold bg-white shadow-sm">
+                            <input type="text" id="edit-id-${item.docId}" value="${item.id}" class="w-full border border-indigo-300 rounded px-1.5 py-1 text-xs font-mono font-bold bg-white">
                         </td>
                         <td class="p-3 align-middle">
-                            <input type="text" id="edit-name-${item.id}" value="${item.name}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold bg-white shadow-sm">
+                            <input type="text" id="edit-name-${item.docId}" value="${item.name}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs font-bold bg-white">
                         </td>
                         <td class="p-3 align-middle">
-                            <select id="edit-cat-${item.id}" class="border border-indigo-300 rounded px-1.5 py-1 text-xs bg-white shadow-sm focus:outline-none">
-                                ${catOptions}
-                            </select>
+                            <select id="edit-cat-${item.docId}" class="border border-indigo-300 rounded px-1.5 py-1 text-xs bg-white">${catOptions}</select>
                         </td>
                         <td class="p-3 align-middle">
-                            <input type="text" id="edit-spec-${item.id}" value="${item.spec}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white shadow-sm">
+                            <input type="text" id="edit-spec-${item.docId}" value="${item.spec}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs bg-white">
                         </td>
                         <td class="p-3 text-center align-middle">
-                            <div class="inline-flex items-center gap-1">
-                                <span class="font-bold text-slate-800">${item.qty}</span>
-                                <input type="text" id="edit-unit-${item.id}" value="${item.unit}" placeholder="單位" class="w-10 border border-indigo-300 rounded px-1 py-0.5 text-xs text-center bg-white shadow-sm focus:outline-none">
-                            </div>
+                            <span class="font-bold text-slate-800">${item.qty}</span>
                         </td>
                         <td class="p-3 text-center align-middle">
-                            <input type="number" id="edit-min-${item.id}" min="1" value="${item.minQty}" class="w-14 border border-indigo-300 rounded px-1 py-1 text-xs text-center bg-white shadow-sm focus:outline-none">
+                            <input type="number" id="edit-min-${item.docId}" min="1" value="${item.minQty}" class="w-14 border border-indigo-300 rounded px-1 py-1 text-xs text-center bg-white">
                         </td>
-                        <td class="p-3 text-center align-middle">
-                            <span class="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded font-medium">編輯中</span>
-                        </td>
+                        <td class="p-3 text-center align-middle"><span class="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded">編輯中</span></td>
                         <td class="p-3 text-center text-slate-400 text-xs align-middle">${item.date || '-'}</td>
-                        <td class="p-3 text-center text-slate-400 text-xs align-middle no-print">鎖定</td>
+                        <td class="p-3 text-center text-slate-400 text-xs align-middle no-print admin-only-col">鎖定</td>
                         <td class="p-3 text-center align-middle no-print">
-                            <div class="inline-flex items-center gap-1">
-                                <button onclick="saveEditItem('${item.id}')" title="儲存變更" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs font-medium shadow-sm transition">儲存</button>
-                                <button onclick="cancelEditItem()" title="取消修改" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs font-medium transition">取消</button>
-                            </div>
+                            <button onclick="saveEditItem('${item.docId}')" class="bg-emerald-600 text-white px-2.5 py-1 rounded text-xs">儲存</button>
+                            <button onclick="cancelEditItem()" class="bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs">取消</button>
                         </td>
                     `;
                 } else {
@@ -883,49 +901,32 @@
                             }
                         </td>
                         <td class="p-3 text-center text-slate-400 text-xs align-middle">${item.date || '-'}</td>
-                        <td class="p-3 text-center align-middle no-print">
+                        <td class="p-3 text-center align-middle no-print admin-only-col">
                             <div class="inline-flex items-center gap-1">
-                                <button onclick="adjustMISStock('${item.id}', -1)" title="扣除 1 ${item.unit}" class="w-6 h-6 rounded border border-slate-300 text-slate-600 hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600 flex items-center justify-center transition">
-                                    <i class="fa-solid fa-minus text-[10px]"></i>
-                                </button>
-                                <button onclick="adjustMISStock('${item.id}', 1)" title="進貨 1 ${item.unit}" class="w-6 h-6 rounded border border-slate-300 text-slate-600 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 flex items-center justify-center transition">
-                                    <i class="fa-solid fa-plus text-[10px]"></i>
-                                </button>
+                                <button onclick="adjustMISStock('${item.docId}', -1)" title="扣除 1" class="w-6 h-6 rounded border border-slate-300 text-slate-600 hover:bg-rose-50 flex items-center justify-center"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                                <button onclick="adjustMISStock('${item.docId}', 1)" title="進貨 1" class="w-6 h-6 rounded border border-slate-300 text-slate-600 hover:bg-emerald-50 flex items-center justify-center"><i class="fa-solid fa-plus text-[10px]"></i></button>
                             </div>
                         </td>
                         <td class="p-3 text-center align-middle no-print relative">
-                            <!-- 操作按鈕 -->
-                            <button onclick="toggleActionMenu(event, '${item.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5 mx-auto">
+                            <button onclick="toggleActionMenu(event, '${item.docId}')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5 mx-auto">
                                 <i class="fa-solid fa-ellipsis-vertical"></i> 操作
                             </button>
                             
-                            <!-- 浮動彈跳視窗小方塊 (Dropdown Popup) -->
-                            <div id="action-menu-${item.id}" class="action-menu-dropdown hidden absolute right-12 top-2 w-60 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-3 text-left space-y-3">
+                            <div id="action-menu-${item.docId}" class="action-menu-dropdown hidden absolute right-8 top-10 w-60 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-3 text-left space-y-3">
                                 <div>
                                     <p class="text-[11px] font-bold text-slate-400 uppercase mb-1.5 flex items-center gap-1">
                                         <i class="fa-solid fa-share-nodes"></i> 快速調撥至部門
                                     </p>
                                     <div class="space-y-1.5">
-                                        <select id="dispatch-dept-select-${item.id}" class="w-full border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500">
-                                            ${deptOptions}
-                                        </select>
-                                        <input type="text" id="dispatch-user-input-${item.id}" placeholder="同仁姓名" class="w-full border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500">
-                                        <button onclick="dispatchToDept('${item.id}')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 rounded text-xs font-medium transition shadow-sm">
-                                            確認調撥 1 ${item.unit}
-                                        </button>
+                                        <select id="dispatch-dept-select-${item.docId}" class="w-full border border-slate-300 rounded px-2 py-1 text-xs">${deptOptions}</select>
+                                        <input type="text" id="dispatch-user-input-${item.docId}" placeholder="同仁姓名" class="w-full border border-slate-300 rounded px-2 py-1 text-xs">
+                                        <button onclick="dispatchToDept('${item.docId}')" class="w-full bg-indigo-600 text-white py-1.5 rounded text-xs font-medium">確認調撥 1 件</button>
                                     </div>
                                 </div>
-
-                                <div class="border-t border-slate-100 pt-2 flex items-center justify-between gap-1">
-                                    <button onclick="startEditItem('${item.id}')" title="編輯品項" class="flex-1 bg-slate-50 hover:bg-indigo-50 text-indigo-600 py-1.5 rounded text-xs transition font-medium flex items-center justify-center gap-1 border border-slate-200">
-                                        <i class="fa-solid fa-pen"></i> 編輯
-                                    </button>
-                                    <button onclick="scrapFromMIS('${item.id}')" title="報廢註銷" class="flex-1 bg-slate-50 hover:bg-rose-50 text-rose-600 py-1.5 rounded text-xs transition font-medium flex items-center justify-center gap-1 border border-slate-200">
-                                        <i class="fa-solid fa-trash-can"></i> 報廢
-                                    </button>
-                                    <button onclick="deleteMISItem('${item.id}')" title="永久刪除" class="flex-1 bg-slate-50 hover:bg-rose-100 text-rose-700 py-1.5 rounded text-xs transition font-medium flex items-center justify-center gap-1 border border-slate-200">
-                                        <i class="fa-solid fa-xmark"></i> 刪除
-                                    </button>
+                                <div class="border-t border-slate-100 pt-2 flex items-center justify-between gap-1 admin-only-actions">
+                                    <button onclick="startEditItem('${item.docId}')" class="flex-1 bg-slate-50 hover:bg-indigo-50 text-indigo-600 py-1 rounded text-xs border border-slate-200 font-medium">編輯</button>
+                                    <button onclick="scrapFromMIS('${item.docId}')" class="flex-1 bg-slate-50 hover:bg-rose-50 text-rose-600 py-1 rounded text-xs border border-slate-200 font-medium">報廢</button>
+                                    <button onclick="deleteMISItem('${item.docId}')" class="flex-1 bg-slate-50 hover:bg-rose-100 text-rose-700 py-1 rounded text-xs border border-slate-200 font-medium">刪除</button>
                                 </div>
                             </div>
                         </td>
@@ -942,10 +943,16 @@
 
             updateReqSelectOptions();
             updateKPIs();
+            
+            // 隱藏非管理員的內部操作
+            if (!isAdmin) {
+                document.querySelectorAll('.admin-only-actions').forEach(el => el.style.display = 'none');
+            }
         }
 
-        function startEditItem(id) {
-            editingItemId = id;
+        function startEditItem(docId) {
+            if (!isAdmin) { promptAdminLogin(); return; }
+            editingItemId = docId;
             renderMISInventory();
         }
 
@@ -954,85 +961,70 @@
             renderMISInventory();
         }
 
-        function saveEditItem(oldId) {
-            const item = misInventory.find(i => i.id === oldId);
+        function saveEditItem(docId) {
+            if (!isAdmin) { promptAdminLogin(); return; }
+            const item = misInventory.find(i => i.docId === docId);
             if (!item) return;
 
-            const newId = document.getElementById(`edit-id-${oldId}`).value.trim();
-            const oldName = item.name;
-            const newName = document.getElementById(`edit-name-${oldId}`).value.trim();
-            const newCat = document.getElementById(`edit-cat-${oldId}`).value;
-            const newSpec = document.getElementById(`edit-spec-${oldId}`).value.trim();
-            const newUnit = document.getElementById(`edit-unit-${oldId}`).value.trim() || "個";
-            const newMin = parseInt(document.getElementById(`edit-min-${oldId}`).value) || 1;
+            const newId = document.getElementById(`edit-id-${docId}`).value.trim();
+            const newName = document.getElementById(`edit-name-${docId}`).value.trim();
+            const newCat = document.getElementById(`edit-cat-${docId}`).value;
+            const newSpec = document.getElementById(`edit-spec-${docId}`).value.trim();
+            const newMin = parseInt(document.getElementById(`edit-min-${docId}`).value) || 1;
 
             if (!newId || !newName) {
-                showToast('資產編號與品項名稱不可為空！', 'error');
+                showToast('編號與品項名稱不可為空！', 'error');
                 return;
-            }
-
-            if (newId !== oldId && misInventory.some(i => i.id === newId)) {
-                showToast(`編號【${newId}】已經存在，請換別的編號！`, 'error');
-                return;
-            }
-
-            if (newId !== oldId && isFirebaseConnected && db) {
-                db.collection('misInventory').doc(oldId).delete();
             }
 
             item.id = newId;
             item.name = newName;
             item.category = newCat;
             item.spec = newSpec || "無特規";
-            item.unit = newUnit;
             item.minQty = newMin;
 
-            if (oldName !== newName) {
-                deptAssets.forEach(da => { if (da.itemName === oldName) { da.itemName = newName; da.unit = newUnit; } });
-                requests.forEach(r => { if (r.itemName === oldName) { r.itemName = newName; } });
-            }
-
             if (isFirebaseConnected && db) {
-                db.collection('misInventory').doc(newId).set(item);
+                db.collection('misInventory').doc(docId).set(item, { merge: true });
             }
             saveAllState();
             editingItemId = null;
             renderMISInventory();
-            renderDeptAssets();
-            renderRequests();
-            showToast(`資產【${newId} - ${newName}】變更已儲存！`);
+            showToast(`資產【${newId} - ${newName}】更新成功！`);
         }
 
-        function deleteMISItem(id) {
+        function deleteMISItem(docId) {
+            if (!isAdmin) { promptAdminLogin(); return; }
             if (confirm("確定要永久刪除此品項嗎？")) {
-                const idx = misInventory.findIndex(i => i.id === id);
+                const idx = misInventory.findIndex(i => i.docId === docId);
                 if (idx > -1) {
                     const removed = misInventory.splice(idx, 1)[0];
-                    if (isFirebaseConnected && db) db.collection('misInventory').doc(id).delete();
+                    if (isFirebaseConnected && db) db.collection('misInventory').doc(docId).delete();
                     saveAllState();
                     renderMISInventory();
-                    showToast(`已成功刪除品項【${removed.name}】！`);
+                    showToast(`已刪除【${removed.name}】`);
                 }
             }
         }
 
-        function adjustMISStock(id, delta) {
-            const item = misInventory.find(i => i.id === id);
+        function adjustMISStock(docId, delta) {
+            if (!isAdmin) { promptAdminLogin(); return; }
+            const item = misInventory.find(i => i.docId === docId);
             if (item) {
                 if (item.qty + delta < 0) {
                     showToast('總倉庫存不可低於 0！', 'error');
                     return;
                 }
                 item.qty += delta;
-                if (isFirebaseConnected && db) db.collection('misInventory').doc(id).set(item, { merge: true });
+                if (isFirebaseConnected && db) db.collection('misInventory').doc(docId).set(item, { merge: true });
                 saveAllState();
                 renderMISInventory();
-                showToast(`【${item.name}】總倉庫存調整為：${item.qty} ${item.unit}`);
+                showToast(`【${item.name}】庫存調整為：${item.qty} ${item.unit}`);
             }
         }
 
-        function scrapFromMIS(id) {
-            const item = misInventory.find(i => i.id === id);
+        function scrapFromMIS(docId) {
+            if (!isAdmin) { promptAdminLogin(); return; }
+            const item = misInventory.find(i => i.docId === docId);
             if (item && item.qty >= 1) {
                 item.qty -= 1;
                 const newScrap = {
@@ -1047,22 +1039,23 @@
                 scrappedLogs.push(newScrap);
 
                 if (isFirebaseConnected && db) {
-                    db.collection('misInventory').doc(id).set(item, { merge: true });
+                    db.collection('misInventory').doc(docId).set(item, { merge: true });
                     db.collection('scrappedLogs').doc(newScrap.scrapId).set(newScrap);
                 }
 
                 saveAllState();
                 renderMISInventory();
                 renderScrappedLogs();
-                showToast(`已註銷報廢 1 ${item.unit}【${item.name}】`);
+                showToast(`已登記報廢 1 ${item.unit}【${item.name}】`);
             } else {
-                showToast(`【${item.name}】總倉庫存不足，無法報廢！`, 'error');
+                showToast(`庫存不足，無法報廢！`, 'error');
             }
         }
 
         function handleAddNewItem(e) {
             e.preventDefault();
-            const customId = document.getElementById('new-item-id').value.trim();
+            if (!isAdmin) { promptAdminLogin(); return; }
+            const customId = document.getElementById('new-item-id').value.trim() || `DGI-01`;
             const name = document.getElementById('new-item-name').value.trim();
             const category = document.getElementById('new-item-cat').value;
             const spec = document.getElementById('new-item-spec').value.trim() || "無特規";
@@ -1070,22 +1063,11 @@
             const minQty = parseInt(document.getElementById('new-item-min').value);
             const today = new Date().toISOString().split('T')[0];
 
-            let finalId = customId;
-            if (finalId) {
-                if (misInventory.some(i => i.id === finalId)) {
-                    showToast(`編號【${finalId}】已存在，請使用其他編號！`, 'error');
-                    return;
-                }
-            } else {
-                const prefixMap = { "固定資產": "FA", "耗材/小物件": "CON", "週邊配件": "ACC" };
-                const prefix = prefixMap[category] || "MIS";
-                finalId = `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
-            }
+            const docId = `item_${Date.now()}`;
+            const newItem = { id: customId, name, category, spec, qty, minQty, unit: "個", date: today };
+            misInventory.unshift({ ...newItem, docId });
 
-            const newItem = { id: finalId, name, category, spec, qty, minQty, unit: "個", date: today };
-            misInventory.unshift(newItem);
-
-            if (isFirebaseConnected && db) db.collection('misInventory').doc(finalId).set(newItem);
+            if (isFirebaseConnected && db) db.collection('misInventory').doc(docId).set(newItem);
 
             document.getElementById('new-item-id').value = '';
             document.getElementById('new-item-name').value = '';
@@ -1093,38 +1075,39 @@
 
             saveAllState();
             renderMISInventory();
-            showToast(`資產品項【${finalId} - ${name}】已成功建檔並入庫！`);
+            showToast(`資產品項【${customId} - ${name}】建檔成功！`);
         }
 
-        function dispatchToDept(id) {
-            const item = misInventory.find(i => i.id === id);
-            const deptSelect = document.getElementById(`dispatch-dept-select-${id}`);
-            const userInput = document.getElementById(`dispatch-user-input-${id}`);
+        function dispatchToDept(docId) {
+            const item = misInventory.find(i => i.docId === docId);
+            const deptSelect = document.getElementById(`dispatch-dept-select-${docId}`);
+            const userInput = document.getElementById(`dispatch-user-input-${docId}`);
 
             const dept = deptSelect.value;
             const user = userInput.value.trim() || "公用備品";
 
             if (item && item.qty >= 1) {
                 item.qty -= 1;
+                const assetDocId = `asset_${Date.now()}`;
                 const newAsset = {
                     id: `DA-${Math.floor(100 + Math.random() * 900)}`,
                     dept, user, itemName: item.name, qty: 1, unit: item.unit,
                     date: new Date().toISOString().split('T')[0]
                 };
-                deptAssets.unshift(newAsset);
+                deptAssets.unshift({ ...newAsset, docId: assetDocId });
 
                 if (isFirebaseConnected && db) {
-                    db.collection('misInventory').doc(id).set(item, { merge: true });
-                    db.collection('deptAssets').doc(newAsset.id).set(newAsset);
+                    db.collection('misInventory').doc(docId).set(item, { merge: true });
+                    db.collection('deptAssets').doc(assetDocId).set(newAsset);
                 }
 
                 userInput.value = '';
                 saveAllState();
                 renderMISInventory();
                 renderDeptAssets();
-                showToast(`已成功將 1 ${item.unit}【${item.name}】調撥給【${dept} - ${user}】！`);
+                showToast(`成功調撥 1 ${item.unit}【${item.name}】給【${dept} - ${user}】！`);
             } else {
-                showToast(`【${item.name}】總倉庫存不足，無法調撥！`, 'error');
+                showToast(`總倉庫存不足！`, 'error');
             }
         }
 
@@ -1166,14 +1149,10 @@
                     <td class="p-3">${asset.itemName}</td>
                     <td class="p-3 text-center font-bold text-slate-700">${asset.qty} ${asset.unit}</td>
                     <td class="p-3 text-slate-400 text-xs">${asset.date}</td>
-                    <td class="p-3 text-center no-print">
+                    <td class="p-3 text-center no-print admin-only-col">
                         <div class="inline-flex items-center gap-1.5">
-                            <button onclick="returnToMIS('${asset.id}')" title="繳回至 MIS 總倉" class="bg-slate-100 hover:bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded text-xs font-medium transition">
-                                <i class="fa-solid fa-arrow-rotate-left"></i> 歸還總倉
-                            </button>
-                            <button onclick="scrapFromDept('${asset.id}')" title="因壞損報廢" class="bg-slate-100 hover:bg-rose-50 text-rose-600 px-2.5 py-1 rounded text-xs font-medium transition">
-                                <i class="fa-solid fa-trash-can"></i> 壞損報廢
-                            </button>
+                            <button onclick="returnToMIS('${asset.docId}')" class="bg-slate-100 hover:bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded text-xs font-medium">歸還總倉</button>
+                            <button onclick="scrapFromDept('${asset.docId}')" class="bg-slate-100 hover:bg-rose-50 text-rose-600 px-2.5 py-1 rounded text-xs font-medium">壞損報廢</button>
                         </div>
                     </td>
                 `;
@@ -1196,32 +1175,30 @@
                 btn.className = "dept-btn px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200";
             });
             const activeBtn = document.getElementById(`dept-filter-${dept}`);
-            if (activeBtn) {
-                activeBtn.className = "dept-btn px-3 py-1 rounded-lg text-xs font-medium bg-indigo-600 text-white";
-            }
+            if (activeBtn) activeBtn.className = "dept-btn px-3 py-1 rounded-lg text-xs font-medium bg-indigo-600 text-white";
             renderDeptAssets();
         }
 
-        function returnToMIS(assetId) {
-            const index = deptAssets.findIndex(a => a.id === assetId);
+        function returnToMIS(docId) {
+            const index = deptAssets.findIndex(a => a.docId === docId);
             if (index > -1) {
                 const asset = deptAssets[index];
                 const misItem = misInventory.find(i => i.name === asset.itemName);
                 if (misItem) {
                     misItem.qty += asset.qty;
-                    if (isFirebaseConnected && db) db.collection('misInventory').doc(misItem.id).set(misItem, { merge: true });
+                    if (isFirebaseConnected && db) db.collection('misInventory').doc(misItem.docId).set(misItem, { merge: true });
                 }
-                if (isFirebaseConnected && db) db.collection('deptAssets').doc(assetId).delete();
+                if (isFirebaseConnected && db) db.collection('deptAssets').doc(docId).delete();
                 deptAssets.splice(index, 1);
                 saveAllState();
                 renderMISInventory();
                 renderDeptAssets();
-                showToast(`已將【${asset.user}】保管之【${asset.itemName}】歸還回 MIS 總倉！`);
+                showToast(`已歸還【${asset.itemName}】至總倉！`);
             }
         }
 
-        function scrapFromDept(assetId) {
-            const index = deptAssets.findIndex(a => a.id === assetId);
+        function scrapFromDept(docId) {
+            const index = deptAssets.findIndex(a => a.docId === docId);
             if (index > -1) {
                 const asset = deptAssets[index];
                 const newScrap = {
@@ -1233,10 +1210,10 @@
                     reason: "部門使用壞損報廢",
                     date: new Date().toISOString().split('T')[0]
                 };
-                scrappedLogs.push(newScrap);
+                scrappedLogs.unshift(newScrap);
 
                 if (isFirebaseConnected && db) {
-                    db.collection('deptAssets').doc(assetId).delete();
+                    db.collection('deptAssets').doc(docId).delete();
                     db.collection('scrappedLogs').doc(newScrap.scrapId).set(newScrap);
                 }
 
@@ -1244,7 +1221,7 @@
                 saveAllState();
                 renderDeptAssets();
                 renderScrappedLogs();
-                showToast(`已登記【${asset.dept} - ${asset.user}】壞損報廢【${asset.itemName}】`);
+                showToast(`已登記壞損報廢【${asset.itemName}】`);
             }
         }
 
@@ -1267,19 +1244,12 @@
                     <td class="p-3 font-semibold text-indigo-700">${req.itemName}</td>
                     <td class="p-3 text-center font-bold text-slate-800">${req.qty}</td>
                     <td class="p-3 text-center">
-                        ${hasStock 
-                            ? `<span class="text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-medium">現貨充足 (${misItem.qty})</span>` 
-                            : `<span class="text-xs text-rose-700 bg-rose-100 px-2 py-0.5 rounded font-medium">庫存不足 (僅存 ${misItem ? misItem.qty : 0})</span>`
-                        }
+                        ${hasStock ? `<span class="text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-medium">現貨充足</span>` : `<span class="text-xs text-rose-700 bg-rose-100 px-2 py-0.5 rounded font-medium">庫存不足</span>`}
                     </td>
-                    <td class="p-3 text-center">
+                    <td class="p-3 text-center admin-only-col">
                         <div class="inline-flex justify-center gap-1.5">
-                            <button onclick="approveRequest(${idx})" ${!hasStock ? 'disabled class="bg-slate-200 text-slate-400 px-2.5 py-1 rounded text-xs cursor-not-allowed"' : 'class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs transition font-medium shadow-sm"'}>
-                                <i class="fa-solid fa-check"></i> 核准撥發
-                            </button>
-                            <button onclick="rejectRequest(${idx})" class="bg-slate-100 hover:bg-rose-50 text-rose-600 px-2.5 py-1 rounded text-xs font-medium transition">
-                                <i class="fa-solid fa-xmark"></i> 退回
-                            </button>
+                            <button onclick="approveRequest(${idx})" ${!hasStock ? 'disabled class="bg-slate-200 text-slate-400 px-2.5 py-1 rounded text-xs cursor-not-allowed"' : 'class="bg-emerald-600 text-white px-2.5 py-1 rounded text-xs"'}>核准</button>
+                            <button onclick="rejectRequest(${idx})" class="bg-slate-100 text-rose-600 px-2.5 py-1 rounded text-xs">退回</button>
                         </div>
                     </td>
                 `;
@@ -1295,7 +1265,7 @@
             const qty = parseInt(document.getElementById('req-qty').value);
 
             if (!itemName) {
-                showToast('目前無可選取的資產品項！', 'error');
+                showToast('請先選擇品項！', 'error');
                 return;
             }
 
@@ -1310,7 +1280,7 @@
             document.getElementById('req-user-name').value = '';
             saveAllState();
             renderRequests();
-            showToast(`【${user}】已成功送出領用申請單！`);
+            showToast(`已送出領用申請！`);
         }
 
         function updateReqSelectOptions() {
@@ -1323,11 +1293,13 @@
         }
 
         function approveRequest(idx) {
+            if (!isAdmin) { promptAdminLogin(); return; }
             const req = requests[idx];
             const misItem = misInventory.find(i => i.name === req.itemName);
 
             if (misItem && misItem.qty >= req.qty) {
                 misItem.qty -= req.qty;
+                const assetDocId = `asset_${Date.now()}`;
                 const newAsset = {
                     id: `DA-${Math.floor(100 + Math.random() * 900)}`,
                     dept: req.dept,
@@ -1337,11 +1309,11 @@
                     unit: misItem.unit,
                     date: new Date().toISOString().split('T')[0]
                 };
-                deptAssets.unshift(newAsset);
+                deptAssets.unshift({ ...newAsset, docId: assetDocId });
 
                 if (isFirebaseConnected && db) {
-                    db.collection('misInventory').doc(misItem.id).set(misItem, { merge: true });
-                    db.collection('deptAssets').doc(newAsset.id).set(newAsset);
+                    db.collection('misInventory').doc(misItem.docId).set(misItem, { merge: true });
+                    db.collection('deptAssets').doc(assetDocId).set(newAsset);
                     db.collection('requests').doc(req.reqId).delete();
                 }
 
@@ -1350,17 +1322,18 @@
                 renderMISInventory();
                 renderDeptAssets();
                 renderRequests();
-                showToast(`已核准【${req.user}】之申請，完成扣庫與部門發放！`);
+                showToast(`已核准領用申請！`);
             }
         }
 
         function rejectRequest(idx) {
+            if (!isAdmin) { promptAdminLogin(); return; }
             const req = requests[idx];
             if (isFirebaseConnected && db) db.collection('requests').doc(req.reqId).delete();
             requests.splice(idx, 1);
             saveAllState();
             renderRequests();
-            showToast(`已退回【${req.user}】的領用申請單！`);
+            showToast(`已退回申請`);
         }
 
         function renderScrappedLogs() {
@@ -1384,61 +1357,20 @@
             const startIdx = (scrapPage - 1) * scrapLimit;
             const displayList = scrapLimit === 0 ? filtered : filtered.slice(startIdx, startIdx + scrapLimit);
 
-            displayList.forEach(log => {
-                const isEditing = editingScrapId === log.scrapId;
+            displayList.forEach((log, idx) => {
                 const tr = document.createElement('tr');
-                tr.className = isEditing ? "bg-amber-50/60 transition border-b border-amber-200" : "hover:bg-slate-50 transition border-b border-slate-100";
-
-                if (isEditing) {
-                    tr.innerHTML = `
-                        <td class="p-3 font-mono text-rose-600 text-xs align-middle">
-                            <input type="text" id="edit-scrap-id-${log.scrapId}" value="${log.scrapId}" class="w-full border border-indigo-300 rounded px-1.5 py-1 text-xs font-mono font-bold bg-white shadow-sm">
-                        </td>
-                        <td class="p-3 align-middle">
-                            <input type="text" id="edit-scrap-name-${log.scrapId}" value="${log.itemName}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs font-bold bg-white shadow-sm">
-                        </td>
-                        <td class="p-3 align-middle">
-                            <input type="text" id="edit-scrap-source-${log.scrapId}" value="${log.source}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs bg-white shadow-sm">
-                        </td>
-                        <td class="p-3 text-center align-middle">
-                            <div class="inline-flex items-center gap-1">
-                                <input type="number" id="edit-scrap-qty-${log.scrapId}" min="1" value="${log.qty}" class="w-12 border border-indigo-300 rounded px-1 py-1 text-xs text-center bg-white shadow-sm">
-                                <input type="text" id="edit-scrap-unit-${log.scrapId}" value="${log.unit}" class="w-10 border border-indigo-300 rounded px-1 py-0.5 text-xs text-center bg-white shadow-sm">
-                            </div>
-                        </td>
-                        <td class="p-3 align-middle">
-                            <input type="text" id="edit-scrap-reason-${log.scrapId}" value="${log.reason}" class="w-full border border-indigo-300 rounded px-2 py-1 text-xs bg-white shadow-sm">
-                        </td>
-                        <td class="p-3 text-center align-middle">
-                            <input type="date" id="edit-scrap-date-${log.scrapId}" value="${log.date}" class="border border-indigo-300 rounded px-1 py-1 text-xs bg-white shadow-sm">
-                        </td>
-                        <td class="p-3 text-center align-middle no-print">
-                            <div class="inline-flex items-center gap-1">
-                                <button onclick="saveEditScrap('${log.scrapId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs font-medium shadow-sm transition">儲存</button>
-                                <button onclick="cancelEditScrap()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs font-medium transition">取消</button>
-                            </div>
-                        </td>
-                    `;
-                } else {
-                    tr.innerHTML = `
-                        <td class="p-3 font-mono text-rose-600 font-semibold text-xs align-middle">${log.scrapId}</td>
-                        <td class="p-3 font-bold text-slate-800 align-middle">${log.itemName}</td>
-                        <td class="p-3 text-slate-600 text-xs align-middle">${log.source}</td>
-                        <td class="p-3 text-center font-bold text-rose-600 align-middle">${log.qty} ${log.unit}</td>
-                        <td class="p-3 text-slate-500 text-xs align-middle">${log.reason}</td>
-                        <td class="p-3 text-center text-slate-400 text-xs align-middle">${log.date}</td>
-                        <td class="p-3 text-center align-middle no-print">
-                            <div class="inline-flex items-center gap-1">
-                                <button onclick="startEditScrap('${log.scrapId}')" title="編輯報廢紀錄" class="bg-slate-100 hover:bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-xs transition font-medium flex items-center gap-1">
-                                    <i class="fa-solid fa-pen-to-square"></i> 編輯
-                                </button>
-                                <button onclick="deleteScrapLog('${log.scrapId}')" title="刪除報廢紀錄" class="bg-slate-100 hover:bg-rose-50 text-rose-600 px-2 py-1 rounded text-xs transition font-medium">
-                                    <i class="fa-solid fa-trash-can"></i> 刪除
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                }
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="p-3 font-mono text-rose-600 font-semibold text-xs">${log.scrapId}</td>
+                    <td class="p-3 font-bold text-slate-800">${log.itemName}</td>
+                    <td class="p-3 text-slate-600 text-xs">${log.source}</td>
+                    <td class="p-3 text-center font-bold text-rose-600">${log.qty} ${log.unit}</td>
+                    <td class="p-3 text-slate-500 text-xs">${log.reason}</td>
+                    <td class="p-3 text-center text-slate-400 text-xs">${log.date}</td>
+                    <td class="p-3 text-center no-print admin-only-col">
+                        <button onclick="deleteScrapLog('${log.scrapId}')" class="bg-slate-100 text-rose-600 px-2.5 py-1 rounded text-xs font-medium">刪除紀錄</button>
+                    </td>
+                `;
                 tbody.appendChild(tr);
             });
 
@@ -1451,60 +1383,15 @@
             updateKPIs();
         }
 
-        function startEditScrap(scrapId) {
-            editingScrapId = scrapId;
-            renderScrappedLogs();
-        }
-
-        function cancelEditScrap() {
-            editingScrapId = null;
-            renderScrappedLogs();
-        }
-
-        function saveEditScrap(oldId) {
-            const log = scrappedLogs.find(l => l.scrapId === oldId);
-            if (!log) return;
-
-            const newId = document.getElementById(`edit-scrap-id-${oldId}`).value.trim();
-            const newName = document.getElementById(`edit-scrap-name-${oldId}`).value.trim();
-            const newSource = document.getElementById(`edit-scrap-source-${oldId}`).value.trim();
-            const newQty = parseInt(document.getElementById(`edit-scrap-qty-${oldId}`).value) || 1;
-            const newUnit = document.getElementById(`edit-scrap-unit-${oldId}`).value.trim() || "個";
-            const newReason = document.getElementById(`edit-scrap-reason-${oldId}`).value.trim() || "無";
-            const newDate = document.getElementById(`edit-scrap-date-${oldId}`).value || new Date().toISOString().split('T')[0];
-
-            if (!newId || !newName) {
-                showToast('報廢編號與物品名稱不可為空！', 'error');
-                return;
-            }
-
-            if (newId !== oldId && isFirebaseConnected && db) {
-                db.collection('scrappedLogs').doc(oldId).delete();
-            }
-
-            log.scrapId = newId;
-            log.itemName = newName;
-            log.source = newSource;
-            log.qty = newQty;
-            log.unit = newUnit;
-            log.reason = newReason;
-            log.date = newDate;
-
-            if (isFirebaseConnected && db) db.collection('scrappedLogs').doc(newId).set(log);
-            saveAllState();
-            editingScrapId = null;
-            renderScrappedLogs();
-            showToast(`報廢紀錄【${newId}】已修訂儲存！`);
-        }
-
         function deleteScrapLog(scrapId) {
+            if (!isAdmin) { promptAdminLogin(); return; }
             const index = scrappedLogs.findIndex(l => l.scrapId === scrapId);
             if (index > -1) {
                 if (isFirebaseConnected && db) db.collection('scrappedLogs').doc(scrapId).delete();
                 scrappedLogs.splice(index, 1);
                 saveAllState();
                 renderScrappedLogs();
-                showToast(`已刪除報廢紀錄【${scrapId}】`);
+                showToast(`已刪除報廢紀錄`);
             }
         }
 
@@ -1516,46 +1403,28 @@
             const limitSelect = `
                 <div class="flex items-center gap-1.5">
                     <span>每頁顯示:</span>
-                    <select onchange="(${onPageChange})(1, parseInt(this.value))" class="border border-slate-200 rounded px-1.5 py-0.5 text-xs focus:outline-none">
+                    <select onchange="(${onPageChange})(1, parseInt(this.value))" class="border border-slate-200 rounded px-1.5 py-0.5 text-xs">
                         ${limitOptions.map(l => `<option value="${l}" ${currentLimit === l ? 'selected' : ''}>${l === 0 ? '全部' : l + ' 筆'}</option>`).join('')}
                     </select>
                 </div>
             `;
 
-            const prevDisabled = currentPage <= 1 ? 'disabled class="opacity-40 cursor-not-allowed px-2 py-1 rounded bg-slate-200"' : 'class="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 transition"';
-            const nextDisabled = currentPage >= totalPages ? 'disabled class="opacity-40 cursor-not-allowed px-2 py-1 rounded bg-slate-200"' : 'class="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 transition"';
-
             container.innerHTML = `
+                <div class="flex items-center gap-2">${limitSelect}<span>共 <strong>${totalRows}</strong> 筆</span></div>
                 <div class="flex items-center gap-2">
-                    ${limitSelect}
-                    <span>共 <strong class="text-slate-700">${totalRows}</strong> 筆資料</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="(${onPageChange})(${currentPage - 1}, ${currentLimit})" ${prevDisabled}>
-                        <i class="fa-solid fa-chevron-left text-[10px]"></i> 上一頁
-                    </button>
+                    <button onclick="(${onPageChange})(${currentPage - 1}, ${currentLimit})" ${currentPage <= 1 ? 'disabled' : ''} class="px-2 py-1 rounded bg-slate-200">上一頁</button>
                     <span>第 <strong>${currentPage}</strong> / <strong>${totalPages}</strong> 頁</span>
-                    <button onclick="(${onPageChange})(${currentPage + 1}, ${currentLimit})" ${nextDisabled}>
-                        下一頁 <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                    </button>
+                    <button onclick="(${onPageChange})(${currentPage + 1}, ${currentLimit})" ${currentPage >= totalPages ? 'disabled' : ''} class="px-2 py-1 rounded bg-slate-200">下一頁</button>
                 </div>
             `;
         }
 
         function updateKPIs() {
             document.getElementById('stat-mis-types').innerText = misInventory.length;
-            
-            const misQtySum = misInventory.reduce((acc, cur) => acc + cur.qty, 0);
-            document.getElementById('stat-mis-qty').innerText = misQtySum;
-
-            const deptQtySum = deptAssets.reduce((acc, cur) => acc + cur.qty, 0);
-            document.getElementById('stat-dept-qty').innerText = deptQtySum;
-
-            const lowStockCount = misInventory.filter(i => i.qty <= i.minQty).length;
-            document.getElementById('stat-low-stock').innerText = lowStockCount;
-
-            const scrapQtySum = scrappedLogs.reduce((acc, cur) => acc + cur.qty, 0);
-            document.getElementById('stat-scrapped-qty').innerText = scrapQtySum;
+            document.getElementById('stat-mis-qty').innerText = misInventory.reduce((acc, cur) => acc + cur.qty, 0);
+            document.getElementById('stat-dept-qty').innerText = deptAssets.reduce((acc, cur) => acc + cur.qty, 0);
+            document.getElementById('stat-low-stock').innerText = misInventory.filter(i => i.qty <= i.minQty).length;
+            document.getElementById('stat-scrapped-qty').innerText = scrappedLogs.reduce((acc, cur) => acc + cur.qty, 0);
         }
 
         function exportToCSV() {
@@ -1563,52 +1432,49 @@
             misInventory.forEach(item => {
                 csvContent += `"${item.id}","${item.name}","${item.category}","${item.spec}",${item.qty},${item.minQty},"${item.unit}","${item.date}"\n`;
             });
-
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `MIS_資產與品項清冊_${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `MIS_資產清冊_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
-            showToast('已成功匯出 CSV 資產報表！');
+            showToast('匯出成功！');
         }
 
         function importCSV(e) {
+            if (!isAdmin) { promptAdminLogin(); e.target.value = ''; return; }
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(evt) {
                 const text = evt.target.result;
                 const lines = text.split('\n');
                 let count = 0;
-
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (!line) continue;
                     const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
-
                     if (cols.length >= 5) {
-                        const id = cols[0] || `MIS-${Math.floor(1000 + Math.random() * 9000)}`;
+                        const id = cols[0] || `DGI-01`;
                         const name = cols[1];
-                        const category = cols[2] || "耗材/小物件";
+                        const category = cols[2] || "固定資產";
                         const spec = cols[3] || "無特規";
                         const qty = parseInt(cols[4]) || 0;
                         const minQty = parseInt(cols[5]) || 5;
                         const unit = cols[6] || "個";
                         const date = cols[7] || new Date().toISOString().split('T')[0];
 
-                        if (name && !misInventory.some(item => item.id === id)) {
+                        if (name) {
+                            const docId = `item_${Date.now()}_${Math.random()}`;
                             const newItem = { id, name, category, spec, qty, minQty, unit, date };
-                            misInventory.unshift(newItem);
-                            if (isFirebaseConnected && db) db.collection('misInventory').doc(id).set(newItem);
+                            misInventory.unshift({ ...newItem, docId });
+                            if (isFirebaseConnected && db) db.collection('misInventory').doc(docId).set(newItem);
                             count++;
                         }
                     }
                 }
-
                 saveAllState();
                 renderMISInventory();
-                showToast(`成功批量匯入 ${count} 筆資產品項！`);
+                showToast(`成功批量匯入 ${count} 筆資產！`);
                 e.target.value = '';
             };
             reader.readAsText(file);
@@ -1624,29 +1490,9 @@
 
         function triggerPrint(type) {
             document.getElementById('print-timestamp').innerText = new Date().toLocaleString();
-
-            const titleMap = {
-                'inventory': 'MIS 總倉現貨與資產清冊',
-                'dept': `跨部門保管明細表 (${currentDeptFilter === 'ALL' ? '全部部門' : currentDeptFilter})`,
-                'scrapped': '資產報廢與損壞銷毀清冊'
-            };
-
-            const startDate = document.getElementById(`${type === 'inventory' ? 'inv' : type === 'dept' ? 'dept' : 'scrap'}-start-date`).value;
-            const endDate = document.getElementById(`${type === 'inventory' ? 'inv' : type === 'dept' ? 'dept' : 'scrap'}-end-date`).value;
-
-            document.getElementById('print-report-title').innerText = titleMap[type] || 'MIS 管控報表';
-            document.getElementById('print-report-subtitle').innerText = `篩選區間：${startDate || '起'} 至 ${endDate || '迄'}`;
-
-            if (type === 'inventory') invLimit = 0, renderMISInventory();
-            if (type === 'dept') deptLimit = 0, renderDeptAssets();
-            if (type === 'scrapped') scrapLimit = 0, renderScrappedLogs();
-
-            setTimeout(() => {
-                window.print();
-                if (type === 'inventory') invLimit = 10, renderMISInventory();
-                if (type === 'dept') deptLimit = 10, renderDeptAssets();
-                if (type === 'scrapped') scrapLimit = 10, renderScrappedLogs();
-            }, 300);
+            const titleMap = { 'inventory': 'MIS 總倉現貨與資產清冊', 'dept': '跨部門保管明細表', 'scrapped': '資產報廢與損壞銷毀清冊' };
+            document.getElementById('print-report-title').innerText = titleMap[type] || 'MIS 報表';
+            window.print();
         }
     </script>
 </body>
