@@ -67,7 +67,7 @@
             animation: fadeInOut 3s forwards;
         }
         input, select, textarea {
-            font-size: 16px !important;
+            font-size: 16px !important; /* 防止 iOS 自動放大 */
         }
         @media print {
             .no-print { display: none !important; }
@@ -182,7 +182,7 @@
             </div>
         </div>
 
-        <!-- 頁籤導覽列 (自訂獨立美化顏色與外框) -->
+        <!-- 頁籤導覽列 (無塗滿風格，具備高對比邊框與互動放大) -->
         <div class="flex border-b border-slate-200 mb-6 gap-2 overflow-x-auto no-print pb-2">
             <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="tab-btn active flex items-center gap-2 whitespace-nowrap">
                 <i class="fa-solid fa-warehouse text-indigo-600"></i> 1. MIS 總倉現貨與資產建檔
