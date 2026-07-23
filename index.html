@@ -11,10 +11,46 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <style>
-        .tab-btn.active {
-            color: #4f46e5;
-            border-bottom-color: #4f46e5;
+        /* 頁籤精緻互動與點選外框 */
+        .tab-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 10px 18px;
+            margin-right: 4px;
         }
+        .tab-btn:hover {
+            transform: translateY(-2px);
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+        .tab-btn.active {
+            color: #ffffff !important;
+            background-color: #4f46e5 !important;
+            border-color: #312e81 !important;
+            box-shadow: 0 6px 15px -3px rgba(79, 70, 229, 0.4), 0 4px 6px -4px rgba(79, 70, 229, 0.4);
+            transform: scale(1.02);
+        }
+
+        /* 筆記本/書本收合展開特效 */
+        .notebook-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .notebook-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .notebook-spine {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            border-top-left-radius: 0.5rem;
+            border-bottom-left-radius: 0.5rem;
+        }
+
         @keyframes fadeInOut {
             0% { opacity: 0; transform: translateY(-20px); }
             15% { opacity: 1; transform: translateY(0); }
@@ -25,7 +61,7 @@
             animation: fadeInOut 3s forwards;
         }
         input, select, textarea {
-            font-size: 16px !important; /* 防止 iOS Safari 自動放大 */
+            font-size: 16px !important;
         }
         @media print {
             .no-print { display: none !important; }
@@ -140,19 +176,19 @@
             </div>
         </div>
 
-        <!-- 頁籤導覽列 -->
-        <div class="flex border-b border-slate-200 mb-6 gap-2 overflow-x-auto no-print">
-            <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="tab-btn active px-5 py-3 font-medium text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-2 whitespace-nowrap">
-                <i class="fa-solid fa-warehouse"></i> 1. MIS 總倉現貨與資產建檔
+        <!-- 頁籤導覽列 (具有各別自訂美化顏色與強烈點選外框) -->
+        <div class="flex border-b border-slate-200 mb-6 gap-2 overflow-x-auto no-print pb-2">
+            <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="tab-btn active font-medium text-indigo-700 bg-indigo-50 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-warehouse text-indigo-500"></i> 1. MIS 總倉現貨與資產建檔
             </button>
-            <button onclick="switchTab('dept')" id="tab-btn-dept" class="tab-btn px-5 py-3 font-medium text-slate-500 hover:text-slate-700 flex items-center gap-2 whitespace-nowrap">
-                <i class="fa-solid fa-sitemap"></i> 2. 跨部門保管與領用明細
+            <button onclick="switchTab('dept')" id="tab-btn-dept" class="tab-btn font-medium text-emerald-700 bg-emerald-50 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-sitemap text-emerald-500"></i> 2. 跨部門保管與領用明細
             </button>
-            <button onclick="switchTab('requests')" id="tab-btn-requests" class="tab-btn px-5 py-3 font-medium text-slate-500 hover:text-slate-700 flex items-center gap-2 whitespace-nowrap relative">
-                <i class="fa-solid fa-hand-holding-hand"></i> 3. 線上領用申請與簽核
+            <button onclick="switchTab('requests')" id="tab-btn-requests" class="tab-btn font-medium text-amber-700 bg-amber-50 flex items-center gap-2 whitespace-nowrap relative">
+                <i class="fa-solid fa-hand-holding-hand text-amber-500"></i> 3. 線上領用申請與簽核
                 <span id="pending-badge" class="bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full font-bold ml-1">0</span>
             </button>
-            <button onclick="switchTab('scrapped')" id="tab-btn-scrapped" class="tab-btn px-5 py-3 font-medium text-slate-500 hover:text-slate-700 flex items-center gap-2 whitespace-nowrap">
+            <button onclick="switchTab('scrapped')" id="tab-btn-scrapped" class="tab-btn font-medium text-rose-700 bg-rose-50 flex items-center gap-2 whitespace-nowrap">
                 <i class="fa-solid fa-dumpster text-rose-500"></i> 4. 資產報廢與損壞銷毀清冊
             </button>
         </div>
@@ -171,20 +207,20 @@
                     </button>
                 </div>
 
-                <div id="code-guide-panel" class="hidden mb-4 p-3.5 bg-white border border-indigo-100 rounded-lg text-xs space-y-3">
+                <!-- 點擊後展開的筆記本/書本卡片區 -->
+                <div id="code-guide-panel" class="hidden mb-4 p-4 bg-white border border-indigo-100 rounded-xl text-xs space-y-3 shadow-inner">
                     <div class="flex flex-wrap justify-between items-center border-b border-slate-100 pb-2 gap-2">
                         <span class="font-bold text-indigo-900 flex items-center gap-1.5">
-                            <i class="fa-solid fa-barcode text-indigo-500"></i> 企業資產與小物件編號自訂對照表
+                            <i class="fa-solid fa-book-open text-indigo-500"></i> 企業資產與小物編號字典（點擊書本展開 / 點擊編號帶入）
                         </span>
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="toggleAddRuleForm()" class="admin-only bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded transition text-[11px] font-medium flex items-center gap-1">
-                                <i class="fa-solid fa-plus text-[10px]"></i> 新增對照規則
+                            <button type="button" onclick="toggleAddRuleForm()" class="admin-only bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg transition text-[11px] font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-plus text-[10px]"></i> 新增編號字典
                             </button>
-                            <span class="text-slate-400 text-[11px]">可點擊下方代碼快速填入</span>
                         </div>
                     </div>
 
-                    <form id="rule-edit-form" onsubmit="handleSaveRule(event)" class="hidden bg-indigo-50/60 p-2.5 rounded border border-indigo-200 text-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                    <form id="rule-edit-form" onsubmit="handleSaveRule(event)" class="hidden bg-indigo-50/80 p-3 rounded-lg border border-indigo-200 text-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
                         <input type="hidden" id="rule-edit-id">
                         <div>
                             <label class="block text-slate-600 font-medium mb-0.5">前綴/代碼 *</label>
@@ -208,21 +244,22 @@
                         </div>
                     </form>
 
-                    <div id="code-rules-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-slate-600"></div>
+                    <!-- 書本/記事本外觀的卡片網格 -->
+                    <div id="code-rules-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
                 </div>
 
                 <form onsubmit="handleAddNewItem(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 text-xs">
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">資產/物品編號 (可重複/自訂)</label>
-                        <input type="text" id="new-item-id" placeholder="如 DGI-01" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 font-mono">
+                        <input type="text" id="new-item-id" placeholder="如 DGI-01" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 font-mono bg-white">
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">品項名稱 *</label>
-                        <input type="text" id="new-item-name" required placeholder="如: 職員筆電" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+                        <input type="text" id="new-item-name" required placeholder="如: 職員筆電" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 bg-white">
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">資產類別 *</label>
-                        <select id="new-item-cat" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+                        <select id="new-item-cat" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 bg-white">
                             <option value="固定資產">固定資產</option>
                             <option value="耗材/小物件">耗材/小物件</option>
                             <option value="週邊配件">週邊配件</option>
@@ -230,15 +267,15 @@
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">規格 / 備註</label>
-                        <input type="text" id="new-item-spec" placeholder="如: Core3-100U" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+                        <input type="text" id="new-item-spec" placeholder="如: Core3-100U" class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 bg-white">
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">初始進貨數 *</label>
-                        <input type="number" id="new-item-qty" min="1" value="10" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+                        <input type="number" id="new-item-qty" min="1" value="10" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 bg-white">
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">最低安全庫存 *</label>
-                        <input type="number" id="new-item-min" min="1" value="5" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+                        <input type="number" id="new-item-min" min="1" value="5" required class="w-full border border-slate-300 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 bg-white">
                     </div>
                     <div class="flex items-end">
                         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 px-3 rounded shadow-sm transition">
@@ -408,10 +445,10 @@
                 </form>
             </div>
 
-            <!-- 下方顯示已經建立的編號自訂對照表 -->
+            <!-- 下方顯示已經建立的編號自訂對照表 (筆記本書本樣式) -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
                 <h4 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                    <i class="fa-solid fa-barcode text-indigo-500"></i> 現有企業資產與編號對照表參考
+                    <i class="fa-solid fa-book-bookmark text-indigo-500"></i> 現有企業資產與編號對照字典（點擊書本展開）
                 </h4>
                 <div id="tab3-code-rules-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-slate-600 text-xs"></div>
             </div>
@@ -546,6 +583,9 @@
         let currentDeptFilter = 'ALL';
         let editingItemId = null;
         let editingScrapId = null;
+
+        // 書本/記事本展開狀態追蹤
+        let expandedNotebooks = {};
 
         let invPage = 1, invLimit = 10;
         let deptPage = 1, deptLimit = 10;
@@ -683,40 +723,80 @@
             if (panel) panel.classList.toggle('hidden');
         }
 
+        // 切換筆記本/書本展開與縮放
+        function toggleNotebookExpand(ruleId) {
+            expandedNotebooks[ruleId] = !expandedNotebooks[ruleId];
+            renderCodeRules();
+        }
+
         function renderCodeRules() {
             const container = document.getElementById('code-rules-grid');
             const tab3Container = document.getElementById('tab3-code-rules-grid');
             
-            [container, tab3Container].forEach(cnt => {
+            // 四張書本卡片各自定義專屬色彩主題 (黃、藍、綠、紫)
+            const themes = [
+                { bg: "bg-amber-50/70 hover:bg-amber-100/80", spine: "bg-amber-500", text: "text-amber-900", badge: "bg-amber-100 text-amber-800" },
+                { bg: "bg-blue-50/70 hover:bg-blue-100/80", spine: "bg-blue-500", text: "text-blue-900", badge: "bg-blue-100 text-blue-800" },
+                { bg: "bg-emerald-50/70 hover:bg-emerald-100/80", spine: "bg-emerald-500", text: "text-emerald-900", badge: "bg-emerald-100 text-emerald-800" },
+                { bg: "bg-purple-50/70 hover:bg-purple-100/80", spine: "bg-purple-500", text: "text-purple-900", badge: "bg-purple-100 text-purple-800" }
+            ];
+
+            [container, tab3Container].forEach((cnt, cntIdx) => {
                 if (!cnt) return;
                 cnt.innerHTML = '';
-                codeRules.forEach(rule => {
+                codeRules.forEach((rule, idx) => {
+                    const theme = themes[idx % themes.length];
+                    const isExpanded = !!expandedNotebooks[rule.id];
+
                     const card = document.createElement('div');
-                    card.className = "p-2.5 bg-slate-50 rounded border border-slate-200 relative group hover:border-indigo-300 transition cursor-pointer";
-                    card.title = "點擊以套用此外框編號至建檔";
-                    card.onclick = () => {
-                        if (isAdmin || cnt.id === 'tab3-code-rules-grid') {
-                            const input = document.getElementById('new-item-id');
-                            if (input) {
-                                input.value = rule.prefix;
-                                showToast(`已帶入編號：${rule.prefix}`);
-                            }
-                        }
+                    card.className = `${theme.bg} rounded-xl border border-slate-200/80 relative notebook-card shadow-sm pl-4 pr-3 py-3 transition-all duration-300`;
+                    
+                    // 點擊書本體展開或縮放
+                    card.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleNotebookExpand(rule.id);
                     };
+
                     card.innerHTML = `
-                        <div class="flex justify-between items-start mb-1">
-                            <p class="font-bold text-indigo-700">${rule.prefix} <span class="text-slate-500 font-normal">(${rule.title})</span></p>
-                            ${isAdmin && cnt.id !== 'tab3-code-rules-grid' ? `
-                            <div class="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition no-print">
-                                <button type="button" onclick="event.stopPropagation(); startEditRule('${rule.id}')" title="編輯" class="text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
-                                <button type="button" onclick="event.stopPropagation(); deleteCodeRule('${rule.id}')" title="刪除" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-xmark"></i></button>
-                            </div>` : ''}
+                        <div class="notebook-spine ${theme.spine}"></div>
+                        <div class="flex justify-between items-start mb-1.5">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-sm ${theme.text}">${rule.prefix}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${theme.badge}">${rule.title}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 no-print">
+                                ${isAdmin && cnt.id !== 'tab3-code-rules-grid' ? `
+                                <button type="button" onclick="event.stopPropagation(); startEditRule('${rule.id}')" title="編輯" class="text-indigo-600 hover:text-indigo-800 p-1"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button type="button" onclick="event.stopPropagation(); deleteCodeRule('${rule.id}')" title="刪除" class="text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+                                ` : ''}
+                                <button type="button" class="text-slate-400 hover:text-slate-600 p-1" title="點擊展開/收合書本">
+                                    <i class="fa-solid ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs"></i>
+                                </button>
+                            </div>
                         </div>
-                        <p class="text-[11px] text-slate-500">${rule.desc}</p>
+                        <div class="text-[11px] text-slate-600 line-clamp-1">
+                            <strong>說明：</strong>${rule.desc}
+                        </div>
+                        ${isExpanded ? `
+                        <div class="mt-2 pt-2 border-t border-slate-200/60 text-[11px] text-indigo-700 animate-fadeIn space-y-1">
+                            <p><strong>範例編號：</strong><span class="font-mono">${rule.example}</span></p>
+                            <button type="button" onclick="event.stopPropagation(); applyRulePrefix('${rule.prefix}')" class="w-full mt-1 bg-indigo-600 hover:bg-indigo-500 text-white py-1 rounded text-[11px] font-medium shadow-sm transition">
+                                <i class="fa-solid fa-arrow-pointer"></i> 點擊直接帶入此編號
+                            </button>
+                        </div>
+                        ` : ''}
                     `;
                     cnt.appendChild(card);
                 });
             });
+        }
+
+        function applyRulePrefix(prefix) {
+            const input = document.getElementById('new-item-id');
+            if (input) {
+                input.value = prefix;
+                showToast(`已帶入編號：${prefix}`);
+            }
         }
 
         function toggleAddRuleForm() {
@@ -794,15 +874,15 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // 移除所有頁籤的 active 狀態
             document.querySelectorAll('.tab-btn').forEach(el => {
-                el.classList.remove('active', 'text-indigo-600', 'border-b-2', 'border-indigo-600');
-                el.classList.add('text-slate-500');
+                el.classList.remove('active', 'shadow-lg');
             });
 
             document.getElementById(`tab-${tab}`).classList.remove('hidden');
             const activeBtn = document.getElementById(`tab-btn-${tab}`);
-            activeBtn.classList.add('active', 'text-indigo-600', 'border-b-2', 'border-indigo-600');
-            activeBtn.classList.remove('text-slate-500');
+            activeBtn.classList.add('active', 'shadow-lg');
 
             if (tab === 'inventory') renderMISInventory();
             if (tab === 'dept') renderDeptAssets();
